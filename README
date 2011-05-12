@@ -1,0 +1,17 @@
+BOW - Bugzilla Objective Watchdog
+=================================
+
+Bow shows you a table of the latest changes in Bugzilla, when those happened
+and who was the originator.
+
+BOW's features:
+ - select date from where you want to show the result from (until today/now).
+ - show multiple results (tables) in tabs
+ - all data updated when the date parameter is changed
+ - CSV export per table
+
+CONFIGURATION:
+=================================
+
+Install BOW directory under <bugzilla directory>/extensions/BOW
+
