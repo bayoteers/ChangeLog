@@ -53,6 +53,7 @@ sub _get_all_group_names {
     for my $group (Bugzilla::Group->get_all) {
        push(@group_list, $group->name); 
     }
+    shift @group_list;
     return @group_list;
 }
 
