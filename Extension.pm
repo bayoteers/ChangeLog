@@ -100,13 +100,13 @@ sub check_parameter {
         my $retval = get_queries($value);
         my $queries = $retval->{'queries'};
 
+        our $error = '';
+        sub handle_error { #
+            $error = shift;
+        }
+
         for (keys %$queries)
         {
-            my $error = '';
-            sub handle_error { #
-                $error = shift;
-            }
-
             my $dbh = Bugzilla->dbh;
             $dbh->{RaiseError} = 0;
             $dbh->{PrintError} = 0;
