@@ -174,7 +174,7 @@ sub page_before_template {
         my $field_name         = $cgi->param('field');
         my $from_date = $cgi->param('from_date');
 
-        if ($from_date =~ /^([1-2][0-9][0-9][0-9])-([0-1][0-9])-([0-2][0-9])$/) {
+        if ($from_date =~ /^([1-2][0-9][0-9][0-9])-([0-1][0-9])-([0-3][0-9])$/) {
            $from_date = "$1-$2-$3"; # untainted
         }
 
