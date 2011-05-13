@@ -34,7 +34,6 @@
 <script type="text/JavaScript" src="extensions/BOW/web/js/table2CSV.js"></script>
   
 <script id="rowTmpl" type="text/html">
-<input type='button' value='Download CSV' onclick="$('#<#= tableid #>').table2CSV();" />
 <table id='<#= tableid #>' border='1'>
     <thead>
     <tr>
@@ -69,6 +68,9 @@
         <# } #>
     </tbody>
 </table>
+  <br />
+
+  <input type='button' value='Download CSV' onclick="$('#<#= tableid #>').table2CSV();" />
 </script>
 
 <script>
