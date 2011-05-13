@@ -29,21 +29,21 @@ sub get_param_list {
     my ($class) = @_;
 
     my @param_list = (
-                      {
-                         name    => 'bow_queries',
-                         desc    => 'Name and SQL query',
-                         type    => 'l',
-                         default => '',
-                      },
-                      {
-                         name    => 'bow_access_groups',
-                         desc    => 'Flags hidden from users other than the Grant or Request group.',
-                         type    => 'm',
-                         choices => \&_get_all_group_names,
-                         #choices => ['foo', 'bar', 'Admins'],
-                         default => [],
-                      },
-                     );
+        {
+           name    => 'bow_queries',
+           desc    => 'Name and SQL query',
+           type    => 'l',
+           default => '',
+        },
+        {
+           name    => 'bow_access_groups',
+           desc    => 'Flags hidden from users other than the Grant or Request group.',
+           type    => 'm',
+           choices => \&_get_all_group_names,
+           #choices => ['foo', 'bar', 'Admins'],
+           default => [],
+        },
+    );
 
     return @param_list;
 }
@@ -51,7 +51,7 @@ sub get_param_list {
 sub _get_all_group_names {
     my @group_list = [];
     for my $group (Bugzilla::Group->get_all) {
-       push(@group_list, $group->name); 
+        push(@group_list, $group->name);
     }
     shift @group_list;
     return @group_list;
