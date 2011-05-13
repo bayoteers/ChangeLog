@@ -112,7 +112,9 @@ sub check_parameter {
             $dbh->{PrintError} = 0;
             $dbh->{HandleError} = \&handle_error;
 
-            my $sth = $dbh->prepare($queries->{$_}." limit 0");
+            my $query = $queries->{$_};
+            $query =~ s/limit(\s+)(\d+)//;
+            my $sth = $dbh->prepare($query." limit 0");
             $sth->execute || ThrowUserError('invalid_parameter', { name => $name."/".$_, err => 'Server gave "'.$error.'"' });
         }
 
