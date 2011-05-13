@@ -10,24 +10,25 @@
 # implied. See the License for the specific language governing
 # rights and limitations under the License.
 #
-# The Original Code is the BlameThisGuy Bugzilla Extension.
+# The Original Code is the Bugzilla Objective Watchdog Bugzilla Extension.
 #
-# The Initial Developer of the Original Code is YOUR NAME
+# The Initial Developer of the Original Code is Nokia.
 # Portions created by the Initial Developer are Copyright (C) 2011 the
 # Initial Developer. All Rights Reserved.
 #
 # Contributor(s):
-#   YOUR NAME <YOUR EMAIL ADDRESS>
+#   Eero Heino <eero.heino@nokia.com>
 
-package Bugzilla::Extension::BlameThisGuy;
+package Bugzilla::Extension::BOW;
 use strict;
 
-use constant NAME => 'BlameThisGuy';
+use constant NAME => 'BOW';
 
 use constant REQUIRED_MODULES => [
 ];
 
 use constant OPTIONAL_MODULES => [
 ];
+
 
 __PACKAGE__->NAME;

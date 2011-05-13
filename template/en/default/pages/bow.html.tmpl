@@ -38,12 +38,17 @@
 <table id='<#= tableid #>' border='1'>
     <thead>
     <tr>
+<!--
                 <th>bug id</th>
                 <th>when</th>
                 <th>component</th>
                 <th>from</th>
                 <th>to</th>
                 <th>who</th>
+-->
+            <# for (var i = 0; i < cols.length; i++) { #>
+                <th><#= cols[i] #></th>
+            <# } #>
     </tr>
     </thead>
     <tbody id='<#= rowsid #>'>
@@ -89,12 +94,14 @@ function update(data)
     if (!data.rows.length)
     {
         html = 'no changes found';
-        alert(html);
+        //alert(html);
     } else
     {
         html = parseTemplate($("#rowTmpl").html(),
-                             { rows: data.rows, tableid: 'table'+data.name, rowsid: 'rows'+data.name });
+                             { rows: data.rows, tableid: 'table'+data.name,
+                               rowsid: 'rows'+data.name, cols: data.cols });
     }
+
     $('#'+data.name).html(html);
     $('#table'+data.name).tablesorter({sortList: [[0,0]], locale: 'de', useUI: true});
 }
@@ -117,7 +124,7 @@ function get_data()
         });
 
 
-        $.each(['flags', 'severity', 'reopened', 'target_milestone'], function (i, val)
+        $.each([[% FOREACH tabname IN tabs %]'[% tabname %]',[% END %]], function (i, val)
         {
             waiting_ajax++;
             $.post('page.cgi?id=bow_ajax.html',
@@ -138,19 +145,14 @@ Get changes from <input onChange="get_data();" type="text" value='' id="datepick
 
 <div id="tabs">
     <ul>
-        <li><a href="#flags">Flags</a></li>
-        <li><a href="#severity">Severity</a></li>
-        <li><a href="#reopened">Reopened</a></li>
-        <li><a href="#target_milestone">Target Milestone</a></li>
+        [% FOREACH tabname IN tabs %]
+        <li><a href="#[% tabname %] ">[% tabname %]</a></li>
+        [% END %]
     </ul>
-    <div id="flags">
+    [% FOREACH tabname IN tabs %]
+    <div id="[% tabname %]">
     </div>
-    <div id="severity">
-    </div>
-    <div id="reopened">
-    </div>
-    <div id="target_milestone">
-    </div>
+    [% END %]
 </div>
 
 <div id='download'></div>

@@ -12,21 +12,112 @@
 #
 # The Original Code is the Bugzilla Objective Watchdog Bugzilla Extension.
 #
-# The Initial Developer of the Original Code is YOUR NAME
+# The Initial Developer of the Original Code is "Nokia Corporation"
 # Portions created by the Initial Developer are Copyright (C) 2011 the
 # Initial Developer. All Rights Reserved.
 #
 # Contributor(s):
 #   Eero Heino <eero.heino@nokia.com>
 
-package Bugzilla::Extension::BlameThisGuy;
+package Bugzilla::Extension::BOW;
 use strict;
 use base qw(Bugzilla::Extension);
 
-# This code for this is in ./extensions/BlameThisGuy/lib/Util.pm
-use Bugzilla::Extension::BlameThisGuy::Util;
+use Bugzilla::Constants;
+use Bugzilla::Error;
+use Bugzilla::Group;
+use Bugzilla::User;
+
+
+# This code for this is in ./extensions/BOW/lib/Util.pm
+use Bugzilla::Extension::BOW::Util;
 
 our $VERSION = '0.01';
+
+sub config {
+    my ($self, $args) = @_;
+
+    my $config = $args->{config};
+    $config->{BOW} = "Bugzilla::Extension::BOW::Config";
+}
+
+sub config_add_panels {
+    my ($self, $args) = @_;
+
+    my $modules = $args->{panel_modules};
+    $modules->{BOW} = "Bugzilla::Extension::BOW::Config";
+}
+
+sub get_queries {
+
+    my ($value, $from_date) = @_;
+    my $queries = {};
+    my @names = ();
+
+    for my $line (split(/\n/, $value))
+    {
+            # skip empty lines
+            if ($line =~ /^$/)
+            {
+                next;
+            }
+
+        if (not $line =~ /"(.+)"(\s+)"(.+)[^;]"/)
+        {
+            ThrowUserError('invalid_parameter', { name => 'bow_queries', err => 'Every line must have format: "name-of-query" "the-sql-query-with-optional-<from-date>-somewhere-without-ending-semicolon"' });
+        }
+        if ($line =~ m/CREATE |INSERT |REPLACE |UPDATE |DELETE /i) {
+            ThrowUserError('invalid_parameter', { name => 'bow_queries', err => "Only 'SELECT' allowed for query: $line" });
+        }
+
+        if (not defined $from_date) {
+            $from_date = 'NOW()';
+        }
+        if ($line =~ /"(.+)"(\s+)"(.+)"/)
+        {
+            my $query = $3;
+            my $name = $1;
+            $query =~ s/(['"]*)<from-date>(['"]*)/'$from_date'/;
+            $queries->{$name} = $query;
+            push(@names, $name);
+        }
+    }
+
+    return {names => \@names, queries => $queries};
+}
+
+
+
+sub check_parameter {
+    my ($self, $args) = @_;
+    
+    my $name = $args->{name};
+    #my @queries = [];
+    if ($name eq 'bow_queries')
+    {
+        my $value = $args->{value};
+
+        my $retval = get_queries($value);
+        my $queries = $retval->{'queries'};
+
+        for (keys %$queries)
+        {
+            my $error = '';
+            sub handle_error { #
+                $error = shift;
+            }
+
+            my $dbh = Bugzilla->dbh;
+            $dbh->{RaiseError} = 0;
+            $dbh->{PrintError} = 0;
+            $dbh->{HandleError} = \&handle_error;
+
+            my $sth = $dbh->prepare($queries->{$_}." limit 0");
+            $sth->execute || ThrowUserError('invalid_parameter', { name => $name."/".$_, err => 'Server gave "'.$error.'"' });
+        }
+
+    }
+}
 
 # See the documentation of Bugzilla::Hook ("perldoc Bugzilla::Hook" 
 # in the bugzilla directory) for a list of all available hooks.
@@ -41,9 +132,27 @@ sub page_before_template {
     my ($vars, $page) = @$args{qw(vars page_id)};
     my $cgi             = Bugzilla->cgi;
 
+    my $access = 0;
+    my $names = Bugzilla->params->{"bow_access_groups"};
+    for (my $i = 0; $i <= $#$names; $i++) {
+        if (Bugzilla->user->in_group($names->[$i])) {
+            $access = 1;
+            last;
+        }
+    }
+
+    if (not $access)
+    {
+            ThrowUserError('auth_failure', { group => "wanted", action => "show", object => "team" });
+    }
     if ($page eq 'bow.html') {
         use Bugzilla::DB;
         my $dbh = Bugzilla->dbh;
+
+        my $retval = get_queries(Bugzilla->params->{"bow_queries"});
+        my $queries = $retval->{'queries'};
+
+        $vars->{'tabs'} = $retval->{'names'};
         $vars->{'data'} = [];
 
     }
@@ -77,41 +186,41 @@ sub page_before_template {
         }
 
         my $sth = 0;
+        my @cols = [];
 
-        if ($field_name eq 'flags')
+        my $retval = get_queries(Bugzilla->params->{"bow_queries"}, $from_date);
+        my $queries = $retval->{'queries'};
+
+        if (exists $queries->{$field_name})
         {
-            $sth = $dbh->prepare("select bugs.bug_id,bugs_activity.bug_when,products.name as component,bugs_activity.removed as changed_from, bugs_activity.added as changed_to,profiles.login_name as user from bugs_activity left join profiles on bugs_activity.who = profiles.userid left join bugs on bugs.bug_id = bugs_activity.bug_id left join products on products.id = bugs.product_id where products.classification_id=2 and fieldid=42 and timestamp(bugs_activity.bug_when) >= TIMESTAMP('".$from_date."')");
+            $sth = $dbh->prepare($queries->{$field_name});
         }
-
-        if ($field_name eq 'severity')
-        {
-            $sth = $dbh->prepare("select bugs.bug_id,bugs_activity.bug_when,products.name as component,bugs_activity.removed as removed,bugs_activity.added as added,profiles.login_name as user from bugs_activity left join profiles on bugs_activity.who = profiles.userid left join bugs on bugs.bug_id = bugs_activity.bug_id left join products on products.id = bugs.product_id where products.classification_id=2 and fieldid=12 and timestamp(bugs_activity.bug_when) >= TIMESTAMP('".$from_date."') order by bugs_activity.bug_when asc");
-        }
-
-        if ($field_name eq 'reopened')
-        {
-            $sth = $dbh->prepare("select bugs.bug_id,bugs_activity.bug_when,products.name as component,bugs_activity.removed as removed,bugs_activity.added as added,profiles.login_name as user from bugs_activity left join profiles on bugs_activity.who = profiles.userid left join bugs on bugs.bug_id = bugs_activity.bug_id left join products on products.id = bugs.product_id where products.classification_id=2 and fieldid=8 and bugs_activity.added='reopened' and timestamp(bugs_activity.bug_when) >= TIMESTAMP('".$from_date."')");
-        }
-
-        if ($field_name eq 'target_milestone')
-        {
-            $sth = $dbh->prepare("select bugs.bug_id,bugs_activity.bug_when,products.name as component,bugs_activity.removed as removed,bugs_activity.added as added,profiles.login_name as user from bugs_activity left join profiles on bugs_activity.who = profiles.userid left join bugs on bugs.bug_id = bugs_activity.bug_id left join products on products.id = bugs.product_id where products.classification_id=2 and fieldid=28 and timestamp(bugs_activity.bug_when) >= TIMESTAMP('".$from_date."')");
-        }
-
-
 
         if ($sth)
         {
             # Execute the query
             $sth->execute;
 
+            my $retval = { 'rows' =>  $sth->fetchall_arrayref, 'name' => $field_name };
+
+            my $column_query = $queries->{$field_name}." limit 0";
+            if ($column_query =~ /(.*)/)
+            {
+                $column_query = $1;
+            }
+            $dbh->prepare($column_query);
+            $sth->execute;
+
+            $retval->{'cols'} = $sth->{NAME};
+
             use JSON;
-            $vars->{'data'} = to_json({ 'rows' =>  $sth->fetchall_arrayref, 'name' => $field_name });
+            $vars->{'data'} = to_json($retval);
 
         } else
         {
 
-            $vars->{'data'} = to_json({ 'rows' =>  to_json([]), 'name' => $field_name });
+            $vars->{'data'} = to_json({ 'rows' =>  to_json([]), 'name' => $field_name,
+                                        'cols' => @cols });
         }
     }
 }
