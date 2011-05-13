@@ -116,7 +116,7 @@ function get_data()
 
     if (!from_date)
     {
-        alert('select "Get changes from" date');
+        alert('select "View changes from:" date');
     } else
     {
         $('.loading_element').each(function()
@@ -140,7 +140,7 @@ function get_data()
 }
 </script>
 
-Get changes from <input onChange="get_data();" type="text" value='' id="datepicker">
+View changes from: <input onChange="get_data();" type="text" value='' id="datepicker">
 <span class='loading_element'>
     <img src='extensions/BOW/web/ajax-loader.gif' />
 </span>
