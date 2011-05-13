@@ -15,9 +15,15 @@ CONFIGURATION:
 
 Install BOW directory under <bugzilla directory>/extensions/BOW
 
+patch your bugzilla with:
+cd <bugzilla directory>
+patch < <where BAT is>/check_parameters.patch
+
+
 
 EXAMPLE QUERIES:
 =================================
+#FIXME remove classification
 "flags" "select bugs.bug_id,bugs_activity.bug_when,products.name as component,bugs_activity.removed as changed_from, bugs_activity.added as changed_to,profiles.login_name as user from bugs_activity left join profiles on bugs_activity.who = profiles.userid left join bugs on bugs.bug_id = bugs_activity.bug_id left join products on products.id = bugs.product_id where products.classification_id=2 and fieldid=42 and timestamp(bugs_activity.bug_when) >= TIMESTAMP('<from-date>')"
 
 "severity" "select bugs.bug_id,bugs_activity.bug_when,products.name as component,bugs_activity.removed as removed,bugs_activity.added as added,profiles.login_name as user from bugs_activity left join profiles on bugs_activity.who = profiles.userid left join bugs on bugs.bug_id = bugs_activity.bug_id left join products on products.id = bugs.product_id where products.classification_id=2 and fieldid=12 and timestamp(bugs_activity.bug_when) >= TIMESTAMP('<from-date>')"
