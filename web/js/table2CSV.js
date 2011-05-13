@@ -50,7 +50,6 @@ jQuery.fn.table2CSV = function(options) {
         }
     }
     function formatData(input) {
-        // replace " with “
         var regexp = new RegExp(/["]/g);
         var output = input.replace(regexp, "“");
         //HTML
@@ -63,7 +62,7 @@ jQuery.fn.table2CSV = function(options) {
         return '"' + output + '"';
     }
     function popup(data) {
-        $("#download").append('<form id="exportform" action="page.cgi?id=blamethisguy_file.html" method="post" target="_blank"><input type="hidden" id="exportdata" name="data" /> <input type="hidden" name="from_date" value="'+$('#datepicker').val()+'"/><input type="hidden" name="to_date" value="'+get_datestamp()+'"/></form>');
+        $("#download").append('<form id="exportform" action="page.cgi?id=bow_file.html" method="post" target="_blank"><input type="hidden" id="exportdata" name="data" /> <input type="hidden" name="from_date" value="'+$('#datepicker').val()+'"/><input type="hidden" name="to_date" value="'+get_datestamp()+'"/></form>');
         $("#exportdata").val(data);
         $("#exportform").submit().remove();
 
