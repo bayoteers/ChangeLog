@@ -26,7 +26,6 @@
    style_urls      = ["extensions/BOW/web/js/jquery/css/smoothness/jquery-ui-1.8.12.custom.css"]
 %]
 
-
 <script type="text/javascript" src="extensions/BOW/web/js/bow.js"></script>
 <script type="text/JavaScript" src="extensions/BOW/web/js/jquery/js/jquery-1.5.1.min.js"></script>
 <script type="text/JavaScript" src="extensions/BOW/web/js/jquery/js/jquery-ui-1.8.12.custom.min.js"></script>
@@ -36,71 +35,61 @@
 <h1>Bugzilla Objective Watchdog</h1>
   
 <script id="rowTmpl" type="text/html">
-<table id='<#= tableid #>' border='1'>
+  <table id='<#= tableid #>' border='1'>
     <thead>
-    <tr>
-<!--
-                <th>bug id</th>
-                <th>when</th>
-                <th>component</th>
-                <th>from</th>
-                <th>to</th>
-                <th>who</th>
--->
-            <# for (var i = 0; i < cols.length; i++) { #>
-                <th><#= cols[i] #></th>
-            <# } #>
-    </tr>
+      <tr>
+        <# for (var i = 0; i < cols.length; i++) { #>
+          <th><#= cols[i] #></th>
+        <# } #>
+      </tr>
     </thead>
     <tbody id='<#= rowsid #>'>
-
-        <# for (var i = 0; i < rows.length; i++) { #>
+      <# for (var i = 0; i < rows.length; i++) { #>
         <tr>
         <# for (var k = 0; k < rows[i].length; k++) { #>
-            <td>
+          <td>
             <# if (k == 0) { #>
-            <a href="show_bug.cgi?id=<#= rows[i][k] #>"><#= rows[i][k] #></a><# } else { #>
-            <#= rows[i][k] #>
+              <a href="show_bug.cgi?id=<#= rows[i][k] #>"><#= rows[i][k] #></a><# } else { #>
+              <#= rows[i][k] #>
             <# } #>
             <# if (k == 0) { #>
-            </a>
+              </a>
             <# } #>
-        </td><# } #>
+          </td><# } #>
         </tr>
         <# } #>
     </tbody>
-</table>
+  </table>
+
   <br />
 
   <input type='button' value='Download CSV' onclick="$('#<#= tableid #>').table2CSV();" />
 </script>
 
-<script>
-[% FOREACH table IN data %]
-var ordered_list_data = [[% FOREACH row IN table %][[% FOREACH column IN row %]"[% column | replace( '"', '\"' ) %]",[% END %]],[% END %]];
-[% END %]
+<script type="text/javascript">
+  [% FOREACH table IN data %]
+    var ordered_list_data = [[% FOREACH row IN table %][[% FOREACH column IN row %]"[% column | replace( '"', '\"' ) %]",[% END %]],[% END %]];
+  [% END %]
 
+  var waiting_ajax = 0;
 
-var waiting_ajax = 0;
-
-function update(data)
-{
+  function update(data) {
     waiting_ajax--;
-    if (!waiting_ajax)
-    {
+
+    if (!waiting_ajax) {
         $('.loading_element').each(function()
         {
             $(this).hide();
         });
-
     }
+
     var html = '';
-    if (!data.rows.length)
-    {
+
+    if (!data.rows.length) {
         html = 'no changes found';
         //alert(html);
-    } else
-    {
+    } 
+    else {
         html = parseTemplate($("#rowTmpl").html(),
                              { rows: data.rows, tableid: 'table'+data.name,
                                rowsid: 'rows'+data.name, cols: data.cols });
@@ -108,74 +97,71 @@ function update(data)
 
     $('#'+data.name).html(html);
     $('#table'+data.name).tablesorter({sortList: [[0,0]], locale: 'de', useUI: true});
-}
+  }
 
-
-function get_data()
-{
-    //var limit = $('#limit').val();
+  function get_data() {
     var from_date = $('#datepicker').val();
 
-    if (!from_date)
-    {
-        alert('select "View changes from:" date');
-    } else
-    {
-        $('.loading_element').each(function()
+    if (!from_date) {
+      alert('select "View changes from:" date');
+    } 
+    else {
+      $('.loading_element').each(function()
         {
-        
-            $(this).show();
+          $(this).show();
         });
 
-
-        $.each([[% FOREACH tabname IN tabs %]'[% tabname %]',[% END %]], function (i, val)
+      $.each([[% FOREACH tabname IN tabs %]'[% tabname %]',[% END %]], function (i, val)
         {
-            waiting_ajax++;
-            $.post('page.cgi?id=bow_ajax.html',
-                    {
-                        field: val,
-                        from_date: from_date,
-                    },
-                    update, 'json');
+          waiting_ajax++;
+          $.post('page.cgi?id=bow_ajax.html',
+            {
+              field: val,
+              from_date: from_date,
+            },
+            update, 'json');
         });
     }
-}
+  }
 </script>
 
 View changes from: <input onChange="get_data();" type="text" value='' id="datepicker">
-<span class='loading_element'>
-    <img src='extensions/BOW/web/ajax-loader.gif' />
+
+<span class="loading_element">
+  <img src="extensions/BOW/web/ajax-loader.gif" />
 </span>
 
 <div id="tabs">
-    <ul>
-        [% FOREACH tabname IN tabs %]
-        <li><a href="#[% tabname %] ">[% tabname %]</a></li>
-        [% END %]
-    </ul>
+  <ul>
     [% FOREACH tabname IN tabs %]
+      <li><a href="#[% tabname %] ">[% tabname %]</a></li>
+    [% END %]
+  </ul>
+
+  [% FOREACH tabname IN tabs %]
     <div id="[% tabname %]">
     </div>
-    [% END %]
+  [% END %]
 </div>
 
 <div id='download'></div>
 
-<script>
-$(document).ready(function() {
+<script type="text/javascript">
+  $(document).ready(function() {
     $('.loading_element').each(function()
-    {
+      {
         $(this).hide();
-    });
+      });
+
     var datestamp = get_datestamp(-1);
 
     $("#datepicker").val(datestamp);
-    $( "#datepicker" ).datepicker({ minDate: "-7D", maxDate: "-1D", dateFormat: 'yy-mm-dd', defaultDate: -2 });
+    $("#datepicker").datepicker({ minDate: "-7D", maxDate: "-1D", dateFormat: 'yy-mm-dd', defaultDate: -2 });
 
     get_data(); 
 
     $( "#tabs" ).tabs();
-});
+  });
 </script>
 
 [% PROCESS global/footer.html.tmpl %]
