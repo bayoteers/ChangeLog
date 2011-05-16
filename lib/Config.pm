@@ -30,18 +30,18 @@ sub get_param_list {
 
     my @param_list = (
         {
-           name    => 'bow_queries',
-           desc    => 'Name and SQL query',
-           type    => 'l',
-           default => '',
+           name => 'bow_queries',
+           desc => 'Name and SQL query',
+           type => 'l',
+           default =>
+'"flags" "select bugs.bug_id,bugs.short_desc,bugs_activity.bug_when,bugs_activity.removed as changed_from, bugs_activity.added as changed_to,profiles.login_name as user from bugs_activity left join profiles on bugs_activity.who = profiles.userid left join bugs on bugs.bug_id = bugs_activity.bug_id where fieldid = 44 and timestamp(bugs_activity.bug_when) >= TIMESTAMP(\'<from-date>\')"',
         },
         {
            name    => 'bow_access_groups',
            desc    => 'Flags hidden from users other than the Grant or Request group.',
            type    => 'm',
            choices => \&_get_all_group_names,
-           #choices => ['foo', 'bar', 'Admins'],
-           default => [],
+           default => ['admin'],
         },
     );
 
@@ -49,12 +49,12 @@ sub get_param_list {
 }
 
 sub _get_all_group_names {
-    my @group_list = [];
-    for my $group (Bugzilla::Group->get_all) {
-        push(@group_list, $group->name);
-    }
-    shift @group_list;
-    return @group_list;
+    my @group_names = map { $_->name } Bugzilla::Group->get_all;
+    unshift(@group_names, '');
+
+    my @sorted = sort { lc $a cmp lc $b } @group_names;
+
+    return \@sorted;
 }
 
 1;
