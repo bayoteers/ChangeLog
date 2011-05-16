@@ -103,7 +103,7 @@
     var from_date = $('#datepicker').val();
 
     if (!from_date) {
-      alert('select "View changes from:" date');
+      alert('select "View changes since:" date');
     } 
     else {
       $('.loading_element').each(function()
@@ -127,7 +127,7 @@
 
 <div>
   <p>
-    View changes from: <input onchange="get_data();" type="text" value="" id="datepicker" size="08">
+    View changes since: <input onchange="get_data();" type="text" value="" id="datepicker" size="08">
 
     <span class="loading_element">
       <img src="extensions/BOW/web/ajax-loader.gif" />
