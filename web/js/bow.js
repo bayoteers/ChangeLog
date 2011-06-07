@@ -55,16 +55,16 @@ this.parseTemplate = function(str, data) {
 function get_datestamp(mv_day)
 {
     var current_time = new Date();
+    if (mv_day != undefined)
+    {
+        current_time.setDate(current_time.getDate() + mv_day);
+    }
     var month = current_time.getMonth() + 1;
     if (month < 10)
     {
         month = '0' + month;
     }
     var day = current_time.getDate();
-    if (mv_day != undefined)
-    {
-        day += mv_day;
-    }
     if (day< 10)
     {
         day= '0' + day;
