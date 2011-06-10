@@ -137,7 +137,7 @@ sub page_before_template {
     my ($vars, $page) = @$args{qw(vars page_id)};
     my $cgi = Bugzilla->cgi;
 
-    if ($page eq 'bow.html') {
+    if ($page eq 'ChangeLog.html') {
         _has_access();
 
         my $dbh = Bugzilla->dbh;
@@ -149,7 +149,7 @@ sub page_before_template {
         $vars->{'data'} = [];
     }
 
-    if ($page eq 'bow_file.html') {
+    if ($page eq 'ChangeLog_file.html') {
         _has_access();
 
         print $cgi->header(-type                => 'text/csv',
@@ -157,7 +157,7 @@ sub page_before_template {
         $vars->{'data'} = $cgi->param('data');
     }
 
-    if ($page eq 'bow_ajax.html') {
+    if ($page eq 'ChangeLog_ajax.html') {
         _has_access();
 
         my $dbh = Bugzilla->dbh;
