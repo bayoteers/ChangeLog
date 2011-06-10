@@ -19,7 +19,7 @@
 # Contributor(s):
 #   Eero Heino <eero.heino@nokia.com>
 
-package Bugzilla::Extension::BOW;
+package Bugzilla::Extension::ChangeLog;
 use strict;
 use base qw(Bugzilla::Extension);
 
@@ -31,8 +31,8 @@ use Bugzilla::DB;
 
 use JSON;
 
-# This code for this is in ./extensions/BOW/lib/Util.pm
-use Bugzilla::Extension::BOW::Util;
+# This code for this is in ./extensions/ChangeLog/lib/Util.pm
+use Bugzilla::Extension::ChangeLog::Util;
 
 our $VERSION = '0.01';
 
@@ -40,14 +40,14 @@ sub config {
     my ($self, $args) = @_;
 
     my $config = $args->{config};
-    $config->{BOW} = "Bugzilla::Extension::BOW::Config";
+    $config->{ChangeLog} = "Bugzilla::Extension::ChangeLog::Config";
 }
 
 sub config_add_panels {
     my ($self, $args) = @_;
 
     my $modules = $args->{panel_modules};
-    $modules->{BOW} = "Bugzilla::Extension::BOW::Config";
+    $modules->{ChangeLog} = "Bugzilla::Extension::ChangeLog::Config";
 }
 
 sub get_queries {
@@ -66,14 +66,14 @@ sub get_queries {
             ThrowUserError(
                            'invalid_parameter',
                            {
-                              name => 'bow_queries',
+                              name => 'changelog_queries',
                               err => 'Every line must have format: "name-of-query" "the-sql-query-with-optional-<from-date>-somewhere-without-ending-semicolon"'
                            }
                           );
         }
 
         if ($line =~ m/CREATE |INSERT |REPLACE |UPDATE |DELETE /i) {
-            ThrowUserError('invalid_parameter', { name => 'bow_queries', err => "Only 'SELECT' allowed for query: $line" });
+            ThrowUserError('invalid_parameter', { name => 'changelog_queries', err => "Only 'SELECT' allowed for query: $line" });
         }
 
         if (not defined $from_date) {
@@ -97,7 +97,7 @@ sub check_parameter {
 
     my $name = $args->{name};
 
-    if ($name eq 'bow_queries') {
+    if ($name eq 'changelog_queries') {
         my $value = $args->{value};
 
         my $retval  = get_queries($value);
@@ -142,7 +142,7 @@ sub page_before_template {
 
         my $dbh = Bugzilla->dbh;
 
-        my $retval  = get_queries(Bugzilla->params->{"bow_queries"});
+        my $retval  = get_queries(Bugzilla->params->{"changelog_queries"});
         my $queries = $retval->{'queries'};
 
         $vars->{'tabs'} = $retval->{'names'};
@@ -153,7 +153,7 @@ sub page_before_template {
         _has_access();
 
         print $cgi->header(-type                => 'text/csv',
-                           -content_disposition => 'attachment; filename=bow-' . $cgi->param('from_date') . '_' . $cgi->param('to_date') . '.csv');
+                           -content_disposition => 'attachment; filename=changelog-' . $cgi->param('from_date') . '_' . $cgi->param('to_date') . '.csv');
         $vars->{'data'} = $cgi->param('data');
     }
 
@@ -181,7 +181,7 @@ sub page_before_template {
         my $sth  = 0;
         my @cols = [];
 
-        my $retval = get_queries(Bugzilla->params->{"bow_queries"}, $from_date);
+        my $retval = get_queries(Bugzilla->params->{"changelog_queries"}, $from_date);
         my $queries = $retval->{'queries'};
 
         if (exists $queries->{$field_name}) {
@@ -220,7 +220,7 @@ sub page_before_template {
 sub _has_access() {
     my $access = 0;
 
-    my $names = Bugzilla->params->{"bow_access_groups"};
+    my $names = Bugzilla->params->{"changelog_access_groups"};
 
     foreach my $name (@$names) {
         if (Bugzilla->user->in_group($name)) {

@@ -19,10 +19,10 @@
 # Contributor(s):
 #   Eero Heino <eero.heino@nokia.com>
 
-package Bugzilla::Extension::BOW;
+package Bugzilla::Extension::ChangeLog;
 use strict;
 
-use constant NAME => 'BOW';
+use constant NAME => 'ChangeLog';
 
 use constant REQUIRED_MODULES => [];
 

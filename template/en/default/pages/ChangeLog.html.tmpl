@@ -23,16 +23,16 @@
    title           = "Bugzilla Objective Watchdog"
    header          = "Who Changed What - Blame This Guy"
    subheader      = filtered_desc
-   style_urls      = ["extensions/BOW/web/js/jquery/css/smoothness/jquery-ui-1.8.12.custom.css"]
+   style_urls      = ["extensions/ChangeLog/web/js/jquery/css/smoothness/jquery-ui-1.8.12.custom.css"]
 %]
 
-<script type="text/javascript" src="extensions/BOW/web/js/bow.js"></script>
-<script type="text/JavaScript" src="extensions/BOW/web/js/jquery/js/jquery-1.5.1.min.js"></script>
-<script type="text/JavaScript" src="extensions/BOW/web/js/jquery/js/jquery-ui-1.8.12.custom.min.js"></script>
-<script type="text/JavaScript" src="extensions/BOW/web/js/jquery.tablesorter-update.js"></script>
-<script type="text/JavaScript" src="extensions/BOW/web/js/table2CSV.js"></script>
+<script type="text/javascript" src="extensions/ChangeLog/web/js/changelog.js"></script>
+<script type="text/JavaScript" src="extensions/ChangeLog/web/js/jquery/js/jquery-1.5.1.min.js"></script>
+<script type="text/JavaScript" src="extensions/ChangeLog/web/js/jquery/js/jquery-ui-1.8.12.custom.min.js"></script>
+<script type="text/JavaScript" src="extensions/ChangeLog/web/js/jquery.tablesorter-update.js"></script>
+<script type="text/JavaScript" src="extensions/ChangeLog/web/js/table2CSV.js"></script>
 
-<h1>Bugzilla Objective Watchdog</h1>
+<h1>ChangeLog</h1>
   
 <script id="rowTmpl" type="text/html">
   <table id='<#= tableid #>' border='1'>
@@ -114,7 +114,7 @@
       $.each([[% FOREACH tabname IN tabs %]'[% tabname %]',[% END %]], function (i, val)
         {
           waiting_ajax++;
-          $.post('page.cgi?id=bow_ajax.html',
+          $.post('page.cgi?id=changelog_ajax.html',
             {
               field: val,
               from_date: from_date,
@@ -130,7 +130,7 @@
     View changes since: <input onchange="get_data();" type="text" value="" id="datepicker" size="08">
 
     <span class="loading_element">
-      <img src="extensions/BOW/web/ajax-loader.gif" />
+      <img src="extensions/ChangeLog/web/ajax-loader.gif" />
     </span>
   </p>
 </div>
