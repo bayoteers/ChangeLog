@@ -20,13 +20,13 @@
   #%]
 
 [% PROCESS global/header.html.tmpl
-   title           = "Bugzilla Objective Watchdog"
-   header          = "Who Changed What - Blame This Guy"
+   title           = "ChangeLog"
+   header          = "ChangeLog"
    subheader      = filtered_desc
    style_urls      = ["extensions/ChangeLog/web/js/jquery/css/smoothness/jquery-ui-1.8.12.custom.css"]
 %]
 
-<script type="text/javascript" src="extensions/ChangeLog/web/js/changelog.js"></script>
+<script type="text/javascript" src="extensions/ChangeLog/web/js/ChangeLog.js"></script>
 <script type="text/JavaScript" src="extensions/ChangeLog/web/js/jquery/js/jquery-1.5.1.min.js"></script>
 <script type="text/JavaScript" src="extensions/ChangeLog/web/js/jquery/js/jquery-ui-1.8.12.custom.min.js"></script>
 <script type="text/JavaScript" src="extensions/ChangeLog/web/js/jquery.tablesorter-update.js"></script>
@@ -114,7 +114,7 @@
       $.each([[% FOREACH tabname IN tabs %]'[% tabname %]',[% END %]], function (i, val)
         {
           waiting_ajax++;
-          $.post('page.cgi?id=changelog_ajax.html',
+          $.post('page.cgi?id=ChangeLog_ajax.html',
             {
               field: val,
               from_date: from_date,
