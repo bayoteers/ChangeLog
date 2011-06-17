@@ -71,3 +71,24 @@ function get_datestamp(mv_day)
     }
     return current_time.getFullYear()+'-'+month+'-'+day;
 }
+
+function get_bug_ids_from_list(rows_id)
+{
+    var string_begins = "show_bug.cgi?id=";
+    var id_list = [];
+    $('#'+rows_id).find('a[href^="'+string_begins+'"]').each(function (i, val)
+    {
+        id_list.push($(this).attr('href').replace(string_begins, ''));
+    });
+    return id_list;
+}
+
+function go_to_buglist(rows_id)
+{
+    var buglist = get_bug_ids_from_list(rows_id);
+    if (buglist.length)
+    {
+        window.location = 'buglist.cgi?bug_id=' + buglist.join(',');
+    }
+
+}
