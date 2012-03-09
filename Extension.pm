@@ -50,6 +50,17 @@ sub config_add_panels {
     $modules->{ChangeLog} = "Bugzilla::Extension::ChangeLog::Config";
 }
 
+sub bb_common_links {
+    my ($self, $args) = @_;
+
+    $args->{links}->{ChangeLog} = [
+        {
+            text => 'ChangeLog',
+            href => 'page.cgi?id=ChangeLog.html'
+        }
+    ];
+}
+
 sub get_queries {
     my ($value, $from_date) = @_;
 
