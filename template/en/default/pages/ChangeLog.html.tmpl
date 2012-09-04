@@ -61,12 +61,12 @@
   <br />
 
   <input type='button' value='Download CSV' onclick="$('#<#= tableid #>').table2CSV();" />
-  <input type='button' value='View as Bug List' onclick="go_to_buglist('<#= rowsid #>');" />
+  <input type='button' value='View as [% terms.Bug %] List' onclick="go_to_buglist('<#= rowsid #>');" />
 </script>
 
 <script type="text/javascript">
   [% FOREACH table IN data %]
-    var ordered_list_data = [[% FOREACH row IN table %][[% FOREACH column IN row %]"[% column | replace( '"', '\"' ) %]",[% END %]],[% END %]];
+    var ordered_list_data = [[% FOREACH row IN table %][[% FOREACH column IN row %]"[% column FILTER js %]",[% END %]],[% END %]];
   [% END %]
 
   var waiting_ajax = 0;
@@ -109,7 +109,7 @@
           $(this).show();
         });
 
-      $.each([[% FOREACH tabname IN tabs %]'[% tabname %]',[% END %]], function (i, val)
+      $.each([[% FOREACH tabname IN tabs %]'[% tabname FILTER js %]',[% END %]], function (i, val)
         {
           waiting_ajax++;
           $.post('page.cgi?id=ChangeLog_ajax.html',
@@ -136,12 +136,12 @@
 <div id="tabs">
   <ul>
     [% FOREACH tabname IN tabs %]
-      <li><a href="#[% tabname %] ">[% tabname %]</a></li>
+      <li><a href="#[% tabname FILTER html %] ">[% tabname FILTER html %]</a></li>
     [% END %]
   </ul>
 
   [% FOREACH tabname IN tabs %]
-    <div id="[% tabname %]">
+    <div id="[% tabname FILTER html %]">
     </div>
   [% END %]
 </div>
