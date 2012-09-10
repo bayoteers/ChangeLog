@@ -20,14 +20,15 @@
   #%]
 
 [% PROCESS global/header.html.tmpl
-   title           = "ChangeLog"
-   header          = "ChangeLog"
-   subheader      = filtered_desc
+    title           = "ChangeLog"
+    header          = "ChangeLog"
+    subheader      = filtered_desc
+    javascript_urls = [
+        "extensions/ChangeLog/web/js/ChangeLog.js",
+        "extensions/ChangeLog/web/js/jquery.tablesorter-update.js",
+        "extensions/ChangeLog/web/js/table2CSV.js",
+    ],
 %]
-
-<script type="text/javascript" src="extensions/ChangeLog/web/js/ChangeLog.js"></script>
-<script type="text/JavaScript" src="extensions/ChangeLog/web/js/jquery.tablesorter-update.js"></script>
-<script type="text/JavaScript" src="extensions/ChangeLog/web/js/table2CSV.js"></script>
 
 <h1>ChangeLog</h1>
   
