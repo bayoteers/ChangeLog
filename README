@@ -15,11 +15,6 @@ CONFIGURATION:
 
 Install ChangeLog directory under <bugzilla directory>/extensions/ChangeLog
 
-patch your bugzilla with:
-cd <bugzilla directory>
-patch < <where ChangeLog is>/check_parameters.patch
-
-
 
 EXAMPLE QUERIES:
 =================================

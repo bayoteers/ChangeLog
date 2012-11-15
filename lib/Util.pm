@@ -16,14 +16,56 @@
 
 package Bugzilla::Extension::ChangeLog::Util;
 use strict;
-use base qw(Exporter);
-our @EXPORT = qw(
 
+use Bugzilla::Error;
+
+use base qw(Exporter);
+
+our @EXPORT = qw(
+    get_queries
 );
 
-# This file can be loaded by your extension via
-# "use Bugzilla::Extension::ChangeLog::Util". You can put functions
-# used by your extension in here. (Make sure you also list them in
-# @EXPORT.)
+sub get_queries {
+    my ($value, $from_date) = @_;
 
+    my $queries = {};
+    my @names   = ();
+
+    for my $line (split(/\n/, $value)) {
+        # skip empty lines
+        if ($line =~ /^$/) {
+            next;
+        }
+
+        if (not $line =~ /"(.+)"(\s+)"(.+)[^;]"/) {
+            ThrowUserError('invalid_parameter', {
+                name => 'changelog_queries',
+                err => 'Every line must have format: "name-of-query" '.
+                    '"the-sql-query-with-optional-<from-date>-somewhere'.
+                    '-without-ending-semicolon"'
+            });
+        }
+
+        if ($line =~ m/CREATE |INSERT |REPLACE |UPDATE |DELETE /i) {
+            ThrowUserError('invalid_parameter', {
+                    name => 'changelog_queries',
+                    err => "Only 'SELECT' allowed for query: $line"
+            });
+        }
+
+        if (not defined $from_date) {
+            $from_date = 'NOW()';
+        }
+
+        if ($line =~ /"(.+)"(\s+)"(.+)"/) {
+            my $query = $3;
+            my $name  = $1;
+            $query =~ s/(['"]*)<from-date>(['"]*)/'$from_date'/;
+            $queries->{$name} = $query;
+            push(@names, $name);
+        }
+    }
+
+    return { names => \@names, queries => $queries };
+}
 1;
