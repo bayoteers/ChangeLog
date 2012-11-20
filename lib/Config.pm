@@ -68,7 +68,6 @@ sub _check_queries {
 
     my $result = "";
     for (keys %$queries) {
-        warn "Checking ".$_;
         my $dbh = Bugzilla->dbh;
 
         $dbh->{RaiseError}  = 0;
@@ -79,7 +78,6 @@ sub _check_queries {
         $query =~ s/limit(\s+)(\d+)//;
         my $sth = $dbh->prepare($query . " limit 0");
         if (!$sth->execute) {
-            warn "ERROR";
             $result .= "Query '". $_ . "' has error: ". $error . '. '
         }
     }
