@@ -20,7 +20,7 @@ extension, so install it first.
 
 1.  Put extension files in
 
-        extensions/AgileTools
+        extensions/ChangeLog
 
 2.  Run checksetup.pl
 

@@ -18,6 +18,7 @@ package Bugzilla::Extension::ChangeLog;
 use strict;
 use base qw(Bugzilla::Extension);
 
+use Bugzilla::Config qw(SetParam write_params);
 use Bugzilla::Constants;
 use Bugzilla::Error;
 use Bugzilla::Group;
@@ -47,7 +48,7 @@ sub config_add_panels {
 
 sub bb_common_links {
     my ($self, $args) = @_;
-
+    return unless _has_access();
     $args->{links}->{ChangeLog} = [
         {
             text => 'ChangeLog',
@@ -56,11 +57,27 @@ sub bb_common_links {
     ];
 }
 
-# See the documentation of Bugzilla::Hook ("perldoc Bugzilla::Hook"
-# in the bugzilla directory) for a list of all available hooks.
-sub install_update_db {
+sub object_end_of_update {
     my ($self, $args) = @_;
+    my ($obj, $old_obj, $changes) = @$args{qw(object old_object changes)};
 
+    # Update params if group names change
+    if ($obj->isa("Bugzilla::Group") && defined $changes->{name}) {
+        my @new_names;
+        my $changed = 0;
+        for my $old_name (@{Bugzilla->params->{"changelog_access_groups"}}) {
+            if ($old_name && $old_name eq $old_obj->name) {
+                push(@new_names, $obj->name);
+                $changed = 1;
+            } else {
+                push(@new_names, $old_name);
+            }
+        }
+        if ($changed) {
+            SetParam('changelog_access_groups', \@new_names);
+            write_params();
+        }
+    }
 }
 
 sub page_before_template {
@@ -70,7 +87,7 @@ sub page_before_template {
     my $cgi = Bugzilla->cgi;
 
     if ($page eq 'ChangeLog.html') {
-        _has_access();
+        _has_access(1);
 
         my $dbh = Bugzilla->dbh;
 
@@ -82,7 +99,7 @@ sub page_before_template {
     }
 
     if ($page eq 'ChangeLog_file.html') {
-        _has_access();
+        _has_access(1);
 
         print $cgi->header(-type                => 'text/csv',
                            -content_disposition => 'attachment; filename=changelog-' . $cgi->param('from_date') . '_' . $cgi->param('to_date') . '.csv');
@@ -90,7 +107,7 @@ sub page_before_template {
     }
 
     if ($page eq 'ChangeLog_ajax.html') {
-        _has_access();
+        _has_access(1);
 
         my $dbh = Bugzilla->dbh;
 
@@ -150,6 +167,7 @@ sub page_before_template {
 }
 
 sub _has_access() {
+    my $throwerror = shift;
     my $access = 0;
 
     my $names = Bugzilla->params->{"changelog_access_groups"};
@@ -161,9 +179,10 @@ sub _has_access() {
         }
     }
 
-    if (not $access) {
+    if (!$access && $throwerror) {
         ThrowUserError('auth_failure', { group => "wanted", action => "show", object => "team" });
     }
+    return $access;
 }
 
 __PACKAGE__->NAME;

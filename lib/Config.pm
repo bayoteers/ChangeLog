@@ -24,10 +24,13 @@ use Bugzilla::Extension::ChangeLog::Util;
 sub get_param_list {
     my ($class) = @_;
 
+    my $group_names = [
+        sort { lc $a cmp lc $b } map { $_->name } Bugzilla::Group->get_all()
+    ];
+
     my @param_list = (
         {
            name => 'changelog_queries',
-           desc => 'Name and SQL query',
            type => 'l',
            checker => \&_check_queries,
            default =>
@@ -35,23 +38,13 @@ sub get_param_list {
         },
         {
            name    => 'changelog_access_groups',
-           desc    => 'Flags hidden from users other than the Grant or Request group.',
            type    => 'm',
-           choices => \&_get_all_group_names,
+           choices => $group_names,
            default => ['admin'],
         },
     );
 
     return @param_list;
-}
-
-sub _get_all_group_names {
-    my @group_names = map { $_->name } Bugzilla::Group->get_all;
-    unshift(@group_names, '');
-
-    my @sorted = sort { lc $a cmp lc $b } @group_names;
-
-    return \@sorted;
 }
 
 sub _check_queries {
