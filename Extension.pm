@@ -57,6 +57,11 @@ sub bb_common_links {
     ];
 }
 
+sub bb_group_params {
+    my ($self, $args) = @_;
+    push(@{$args->{group_params}}, 'changelog_access_groups');
+}
+
 sub object_end_of_update {
     my ($self, $args) = @_;
     my ($obj, $old_obj, $changes) = @$args{qw(object old_object changes)};
