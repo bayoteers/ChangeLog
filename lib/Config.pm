@@ -24,9 +24,8 @@ use Bugzilla::Extension::ChangeLog::Util;
 sub get_param_list {
     my ($class) = @_;
 
-    my $group_names = [
-        sort { lc $a cmp lc $b } map { $_->name } Bugzilla::Group->get_all()
-    ];
+    my @group_names = sort { lc $a cmp lc $b } @{Bugzilla->dbh->selectcol_arrayref(
+            "SELECT name FROM groups")};
 
     my @param_list = (
         {
@@ -39,7 +38,7 @@ sub get_param_list {
         {
            name    => 'changelog_access_groups',
            type    => 'm',
-           choices => $group_names,
+           choices => \@group_names,
            default => ['admin'],
         },
     );
