@@ -19,7 +19,9 @@
 %]
 
 [% param_descs = {
-     changelog_queries => "SQL queries and names",
-     changelog_access_groups => "Groups that are allowed to use ChangeLog",
-   }
-%]
+    changelog_access_groups => "Groups that are allowed to use ChangeLog",
+} %]
+[% param_descs.changelog_queries = BLOCK %]
+This param is obsolete. Queries can be edited
+<a href="page.cgi?id=ChangeLogQuery.html">here</a>
+[% END %]

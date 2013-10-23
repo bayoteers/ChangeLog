@@ -1,0 +1,83 @@
+[%#
+  # This Source Code Form is subject to the terms of the Mozilla Public
+  # License, v. 2.0. If a copy of the MPL was not distributed with this
+  # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+  #
+  # Copyright (C) 2013 Jolla Ltd.
+  # Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
+  #%]
+
+[% PROCESS global/variables.none.tmpl %]
+
+[% style = BLOCK %]
+#queries { border-spacing: 0px; }
+#queries th { text-align: left; }
+#queries td.current { font-weight: bold; }
+#queries tr.odd { background-color: lightgray; }
+#edit_query td { vertical-align: top; }
+[% END %]
+
+[% PROCESS global/header.html.tmpl
+    title = "ChangeLog queries"
+%]
+
+<table id="queries">
+  <thead>
+    <tr>
+      <th>Name</th>
+    </tr>
+  </thead>
+  <tbody>
+  [% FOREACH q = queries %]
+    <tr class="[% 'odd' IF loop.odd %]">
+      <td class="[% 'current' IF q.id == current.id %]">
+        [% q.name FILTER html %]
+      </td>
+      <td>
+        <form method="POST" action="page.cgi?id=ChangeLogQuery.html">
+          <input type="hidden" name="qid" value="[% q.id FILTER html %]">
+          <button type="submit" name="action" value="remove"
+            onclick="return confirm('Are you sure you want to remove [% q.name FILTER html %]')"
+            >Remove</button>
+          [% UNLESS q.id == current.id %]
+          <button type="submit">Edit</button>
+          [% END %]
+        </form>
+      </td>
+    </tr>
+  [% END %]
+  </tbody>
+</table>
+
+<hr>
+<form method="POST" action="page.cgi?id=ChangeLogQuery.html">
+  [% IF current %]
+  <input type="hidden" name="qid" value="[% current.id FILTER html %]">
+  [% END %]
+  <table id="edit_query">
+    <tr>
+      <td><label for="name">Name:</label><input type="text" name="name"
+          value="[% current.name FILTER html %]"/></td>
+    </tr>
+    <tr>
+      <td colspan="2">
+        <textarea name="statement" cols="80" rows="20">
+          [% current ? current.statement : 'SELECT ...' FILTER html %]</textarea>
+      </td>
+      <td>
+        <dl>
+          <dt>You can use the following tags in the query:</dt>
+            <dd>&nbsp;</dd>
+          <dt>&lt;from-date&gt;</dt>
+            <dd>Replaced by with "since" date selected by user</dd>
+        </dl>
+      </td>
+    </tr>
+  </table>
+  [% IF current %]
+  <button type="submit" name="action" value="save">Save</button>
+  [% END %]
+  <button type="submit" name="action" value="create">Create New</button>
+</form>
+
+[% PROCESS global/footer.html.tmpl %]

@@ -3,86 +3,87 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * The Original Code is the Bugzilla Objective Watchdog Bugzilla Extension.
- *
- * The Initial Developer of the Original Code is "Nokia Corpodation"
- * Portions created by the Initial Developer are Copyright (C) 2011 the
- * Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *   Eero Heino <eero.heino@nokia.com>
+ * Copyright (C) 2013 Jolla Ltd.
+ * Contact: Pami Ketolainen <pami.ketolainen@jollamobile.com>
  */
 
-// le template engine
-var _tmplCache = {}
-this.parseTemplate = function(str, data) {
-    /// <summary>                                                                                                           
-    /// Client side template parser that uses &lt;#= #&gt; and &lt;# code #&gt; expressions.                                
-    /// and # # code blocks for template expansion.                                                                         
-    /// NOTE: chokes on single quotes in the document in some situations                                                    
-    ///       use &amp;rsquo; for literals in text and avoid any single quote                                               
-    ///       attribute delimiters.                                                                                         
-    /// </summary>                                                                                                          
-    /// <param name="str" type="string">The text of the template to expand</param>                                          
-    /// <param name="data" type="var">                                                                                      
-    /// Any data that is to be merged. Pass an object and                                                                   
-    /// that object's properties are visible as variables.                                                                  
-    /// </param>                                                                                                            
-    /// <returns type="string" />                                                                                           
-    var err = "";
-    try {
-        var func = _tmplCache[str];
-        if (!func) {
-            var strFunc = "var p=[],print=function(){p.push.apply(p,arguments);};" + "with(obj){p.push('" + str.replace(/[\r\t\n]/g, " ").replace(/'(?=[^#]*#>)/g, "\t").split("'").join("\\'").split("\t").join("'").replace(/<#=(.+?)#>/g, "',$1,'").split("<#").join("');").split("#>").join("p.push('") + "');}return p.join('');";
-            //alert(strFunc);                                                                                               
-            func = new Function("obj", strFunc);
-            _tmplCache[str] = func;
-        }
-        return func(data);
-    } catch (e) {
-        err = e.message;
+/**
+ * Helper to change parameters in URL string
+ * @param  {String} url      Old URL
+ * @param  {String} name     Name of the parameter to change
+ * @param  {String} newValue New value for the named parameter
+ * @return {String}          New URL
+ */
+function clSetURLParam (url, name, newValue) {
+    console.log("url", url)
+    // Split the hash and parameters out of the URL
+    var parts = url.split(/#/);
+    var newUrl = parts[0];
+    var hash = parts.length == 1 ? '' : parts[1];
+    parts = newUrl.split(/\?/);
+    newUrl = parts[0];
+    var params = parts.length == 1 ? '' : parts[1];
+
+    // Add or replace the parameter value
+    var re = new RegExp(name+'=[^&]*');
+    if (params.match(re) == null) {
+        if (params) params += '&';
+        params += name + '=' + newValue;
+    } else {
+        params = params.replace(re, name + '=' + newValue);
     }
-    return "< # ERROR: " + err + " # >";
-    //return "< # ERROR: " + err.htmlEncode() + " # >";                                                                     
+
+    // Construct new url
+    newUrl += '?' + params;
+    if (hash) newUrl += '#' + hash;
+    console.log("newUrl", newUrl);
+    return newUrl;
 }
 
-function get_datestamp(mv_day)
+/**
+ * Handler for the date selector changes
+ */
+function clOnDatePickerSelect(date, picker)
 {
-    var current_time = new Date();
-    if (mv_day != undefined)
-    {
-        current_time.setDate(current_time.getDate() + mv_day);
-    }
-    var month = current_time.getMonth() + 1;
-    if (month < 10)
-    {
-        month = '0' + month;
-    }
-    var day = current_time.getDate();
-    if (day< 10)
-    {
-        day= '0' + day;
-    }
-    return current_time.getFullYear()+'-'+month+'-'+day;
-}
+    var name = picker.input.attr('name');
+    var $tabs = $("#tabs");
 
-function get_bug_ids_from_list(rows_id)
-{
-    var string_begins = "show_bug.cgi?id=";
-    var id_list = [];
-    $('#'+rows_id).find('a[href^="'+string_begins+'"]').each(function (i, val)
-    {
-        id_list.push($(this).attr('href').replace(string_begins, ''));
+    // Update tab urls
+    $tabs.data('tabs').anchors.each(function() {
+        var $a = $(this)
+        var url = $a.data('href.tabs');
+        url = clSetURLParam(url, name, date);
+        $a.data('href.tabs', url);
+        $a.data('load.tabs', url);
+        console.log(url);
     });
-    return id_list;
+
+    // Reload current tab
+    // NOTE: option name changes to 'active' in later jQuery UI
+    var selected = $tabs.tabs("option", "selected");
+    $("#tabs").tabs("load", selected);
+
+    //Update history
+    if (history.replaceState) {
+        var pageUrl = clSetURLParam(document.location.href, name, date);
+        history.replaceState({}, document.title, pageUrl);
+    }
 }
 
-function go_to_buglist(rows_id)
+/**
+ * Handler for tab load events
+ */
+function clOnTabLoad(ev, ui)
 {
-    var buglist = get_bug_ids_from_list(rows_id);
-    if (buglist.length)
-    {
-        window.location = 'buglist.cgi?bug_id=' + buglist.join(',');
+    console.log(ui);
+    if (history.replaceState) {
+        var url = document.location.href.replace(/#.*|$/, '#' + ui.panel.id);
+        history.replaceState({}, document.title, url);
+    } else {
+        // This jumps the page to top of the table, but is probably better than
+        // nothing when history manipulation is not available.
+        window.location.hash = ui.panel.id;
     }
-
+    $.cookie("ChangeLogActiveTab", ui.index, { expires: 9999 });
+    $("table.changelog-table", ui.panel).tablesorter();
 }

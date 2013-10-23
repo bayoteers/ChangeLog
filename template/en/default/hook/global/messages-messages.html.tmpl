@@ -1,0 +1,10 @@
+[% IF message_tag == 'changelog_query_saved' %]
+Query '[% current.name FILTER html %]' saved
+
+[% ELSIF message_tag == 'changelog_query_created' %]
+New query '[% current.name FILTER html %]' created
+
+[% ELSIF message_tag == 'changelog_query_removed' %]
+Query '[% name FILTER html %]' removed
+
+[% END %]

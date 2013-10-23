@@ -13,151 +13,68 @@
   #   Eero Heino <eero.heino@nokia.com>
   #%]
 
+[% IF Param('bb_use_debug_js') %]
+  [% javascript_urls = [
+      "extensions/ChangeLog/web/js/jquery.tablesorter.js",
+  ] %]
+[% ELSE %]
+  [% javascript_urls = [
+      "extensions/ChangeLog/web/js/jquery.tablesorter.min.js",
+  ] %]
+[% END %]
+
+[% javascript_urls.push("extensions/ChangeLog/web/js/ChangeLog.js") %]
+
 [% PROCESS global/header.html.tmpl
     title           = "ChangeLog"
     header          = "ChangeLog"
-    subheader      = filtered_desc
-    javascript_urls = [
-        "extensions/ChangeLog/web/js/ChangeLog.js",
-        "extensions/ChangeLog/web/js/jquery.tablesorter-update.js",
-        "extensions/ChangeLog/web/js/table2CSV.js",
-    ],
+    style_urls = [
+      "extensions/ChangeLog/web/css/style.css",
+    ]
 %]
-
-<h1>ChangeLog</h1>
-  
-<script id="rowTmpl" type="text/html">
-  <table id='<#= tableid #>' border='1'>
-    <thead>
-      <tr>
-        <# for (var i = 0; i < cols.length; i++) { #>
-          <th><#= cols[i] #></th>
-        <# } #>
-      </tr>
-    </thead>
-    <tbody id='<#= rowsid #>'>
-      <# for (var i = 0; i < rows.length; i++) { #>
-        <tr>
-        <# for (var k = 0; k < rows[i].length; k++) { #>
-          <td>
-            <# if (k == 0) { #>
-              <a href="show_bug.cgi?id=<#= rows[i][k] #>"><#= rows[i][k] #></a><# } else { #>
-              <#= rows[i][k] #>
-            <# } #>
-            <# if (k == 0) { #>
-              </a>
-            <# } #>
-          </td><# } #>
-        </tr>
-        <# } #>
-    </tbody>
-  </table>
-
-  <br />
-
-  <input type='button' value='Download CSV' onclick="$('#<#= tableid #>').table2CSV();" />
-  <input type='button' value='View as [% terms.Bug %] List' onclick="go_to_buglist('<#= rowsid #>');" />
-</script>
-
-<script type="text/javascript">
-  [% FOREACH table IN data %]
-    var ordered_list_data = [[% FOREACH row IN table %][[% FOREACH column IN row %]"[% column FILTER js %]",[% END %]],[% END %]];
-  [% END %]
-
-  var waiting_ajax = 0;
-
-  function update(data) {
-    waiting_ajax--;
-
-    if (!waiting_ajax) {
-        $('.loading_element').each(function()
-        {
-            $(this).hide();
-        });
-    }
-
-    var html = '';
-
-    if (!data.rows.length) {
-        html = 'no changes found';
-        //alert(html);
-    } 
-    else {
-        html = parseTemplate($("#rowTmpl").html(),
-                             { rows: data.rows, tableid: 'table'+data.name,
-                               rowsid: 'rows'+data.name, cols: data.cols });
-    }
-
-    $('#'+data.name).html(html);
-    $('#table'+data.name).tablesorter({sortList: [[0,0]], locale: 'de', useUI: true});
-  }
-
-  function get_data() {
-    var from_date = $('#datepicker').val();
-
-    if (!from_date) {
-      alert('select "View changes since:" date');
-    } 
-    else {
-      $('.loading_element').each(function()
-        {
-          $(this).show();
-        });
-
-      $.each([[% FOREACH tabname IN tabs %]'[% tabname FILTER js %]',[% END %]], function (i, val)
-        {
-          waiting_ajax++;
-          $.post('page.cgi?id=ChangeLog_ajax.html',
-            {
-              field: val,
-              from_date: from_date,
-            },
-            update, 'json');
-        });
-    }
-  }
-</script>
 
 <div>
   <p>
-    View changes since: <input onchange="get_data();" type="text" value="" id="datepicker" size="08">
-
-    <span class="loading_element">
-      <img src="extensions/ChangeLog/web/ajax-loader.gif" />
-    </span>
+    View changes since:
+    <input id="datepicker" type="text" size="08" name="from_date"
+      value="[% from_date FILTER html %]">
+    <img id="loadin-element" style="display:none;"
+      src="extensions/ChangeLog/web/ajax-loader.gif" />
   </p>
 </div>
 
 <div id="tabs">
   <ul>
-    [% FOREACH tabname IN tabs %]
-      <li><a href="#[% tabname FILTER html %] ">[% tabname FILTER html %]</a></li>
+    [% FOREACH q IN queries %]
+    <li>
+      <a href="page.cgi?id=ChangeLogTable.html&amp;qid=[% q.id ~%]
+              &amp;from_date=[% from_date FILTER uri %]"
+        title="[% q.name FILTER html %]">
+        [% q.name FILTER html %]
+      </a>
+    </li>
     [% END %]
   </ul>
-
-  [% FOREACH tabname IN tabs %]
-    <div id="[% tabname FILTER html %]">
-    </div>
-  [% END %]
 </div>
-
-<div id='download'></div>
 
 <script type="text/javascript">
   $(document).ready(function() {
-    $('.loading_element').each(function()
-      {
-        $(this).hide();
-      });
-
-    var datestamp = get_datestamp(-1);
-
-    $("#datepicker").val(datestamp);
-    $("#datepicker").datepicker({ minDate: "-7D", maxDate: "-0D", dateFormat: 'yy-mm-dd', defaultDate: -2 });
-
-    get_data(); 
-
-    $( "#tabs" ).tabs();
+    $("#datepicker").datepicker({
+      maxDate: "-0D",
+      dateFormat: 'yy-mm-dd',
+      defaultDate: -2,
+      onSelect: clOnDatePickerSelect
+    });
+    var activeTab = $.cookie("ChangeLogActiveTab") || 0;
+    console.log("activeTab", activeTab);
+    $("#tabs").tabs({
+      load: clOnTabLoad,
+      selected: Number(activeTab),
+      ajaxOptions: {
+        beforeSend: function() {$("#loadin-element").show()},
+        complete: function() {$("#loadin-element").hide()},
+      }
+    });
   });
 </script>
 

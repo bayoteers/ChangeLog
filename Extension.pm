@@ -19,18 +19,14 @@ use strict;
 use base qw(Bugzilla::Extension);
 
 use Bugzilla::Config qw(SetParam write_params);
-use Bugzilla::Constants;
-use Bugzilla::Error;
-use Bugzilla::Group;
-use Bugzilla::User;
-use Bugzilla::DB;
+use Bugzilla::Error qw(ThrowCodeError ThrowUserError);
+use Bugzilla::Util qw(datetime_from);
 
-use JSON;
+use Bugzilla::Extension::ChangeLog::Query;
 
-# This code for this is in ./extensions/ChangeLog/lib/Util.pm
-use Bugzilla::Extension::ChangeLog::Util;
+use DateTime;
 
-our $VERSION = '0.01';
+our $VERSION = '0.2';
 
 sub config {
     my ($self, $args) = @_;
@@ -62,6 +58,42 @@ sub bb_group_params {
     push(@{$args->{group_params}}, 'changelog_access_groups');
 }
 
+sub db_schema_abstract_schema {
+    my ($self, $args) = @_;
+    my $schema = $args->{schema};
+
+    # Table for storing the changelog queries
+    $schema->{changelog_queries} = {
+        FIELDS => [
+            id => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
+            name => {TYPE => 'TINYTEXT', NOTNULL => 1},
+            statement => {TYPE => 'MEDIUMTEXT'},
+        ],
+        INDEXES => [],
+    };
+}
+
+sub install_update_db {
+    my $queries_param = Bugzilla->params->{changelog_queries};
+    if ($queries_param ne 'OBSOLETE') {
+        print "Migrating ChangeLog queries to DB...\n";
+        for my $line (split(/\n/, $queries_param)) {
+            # skip empty lines
+            next if ($line =~ /^\s*$/);
+            if ($line =~ /"(.+)"\s+"(.+)"/) {
+                Bugzilla::Extension::ChangeLog::Query->create({
+                    name => $1,
+                    statement => $2,
+                });
+            } else {
+                print "Skipping bad query line: $line\n";
+            }
+        }
+        SetParam('changelog_queries', "OBSOLETE");
+        write_params();
+    }
+}
+
 sub object_end_of_update {
     my ($self, $args) = @_;
     my ($obj, $old_obj, $changes) = @$args{qw(object old_object changes)};
@@ -87,107 +119,100 @@ sub object_end_of_update {
 
 sub page_before_template {
     my ($self, $args) = @_;
-
     my ($vars, $page) = @$args{qw(vars page_id)};
+
+    return unless ($page =~ /^ChangeLog/);
+    _has_access(1);
     my $cgi = Bugzilla->cgi;
+    my $from_date  = $cgi->param('from_date');
+    $from_date = datetime_from($from_date) if defined $from_date;
+    $from_date = defined $from_date ? $from_date->ymd
+            : DateTime->now->subtract( days => 1 )->ymd;
+    $vars->{from_date} = $from_date;
+
+    my $qid = $cgi->param('qid');
 
     if ($page eq 'ChangeLog.html') {
-        _has_access(1);
-
-        my $dbh = Bugzilla->dbh;
-
-        my $retval  = get_queries(Bugzilla->params->{"changelog_queries"});
-        my $queries = $retval->{'queries'};
-
-        $vars->{'tabs'} = $retval->{'names'};
-        $vars->{'data'} = [];
+        $vars->{'queries'} = Bugzilla::Extension::ChangeLog::Query->match();
     }
 
-    if ($page eq 'ChangeLog_file.html') {
-        _has_access(1);
+    if ($page eq 'ChangeLogTable.html' || $page eq 'ChangeLogTable.csv') {
+        ThrowCodeError('param_required', { param => 'qid' }) unless $qid;
+        my $query = Bugzilla::Extension::ChangeLog::Query->check({id => $qid});
+        $vars->{query} = $query;
 
-        print $cgi->header(-type                => 'text/csv',
-                           -content_disposition => 'attachment; filename=changelog-' . $cgi->param('from_date') . '_' . $cgi->param('to_date') . '.csv');
-        $vars->{'data'} = $cgi->param('data');
+        my $result = $query->execute({from_date => $from_date});
+        $vars->{headers} = $result->{columns};
+        $vars->{table} = $result->{data};
+
+        if ($page eq 'ChangeLogTable.csv') {
+            $vars->{human} = $cgi->param('human');
+            my $filename = "changelog-".$query->name;
+            $filename .= "-$from_date" if defined $from_date;
+            $filename .= ".csv";
+            $filename = lc($filename);
+            print $cgi->header(
+                -content_type => "text/csv",
+                -content_disposition => "attachment; filename=$filename"
+            );
+        }
     }
 
-    if ($page eq 'ChangeLog_ajax.html') {
-        _has_access(1);
-
-        my $dbh = Bugzilla->dbh;
-
-        my $cgi        = Bugzilla->cgi;
-        my $field_name = $cgi->param('field');
-        my $from_date  = $cgi->param('from_date');
-
-        if ($from_date =~ /^([1-2][0-9][0-9][0-9])-([0-1][0-9])-([0-3][0-9])$/) {
-            $from_date = "$1-$2-$3";    # untainted
+    if ($page eq 'ChangeLogQuery.html') {
+        ThrowUserError('auth_failure', {
+            group => 'admin', action => 'access',
+            object => 'administrative_pages'
+        }) unless Bugzilla->user->in_group('admin');;
+        my $action = $cgi->param('action') || '';
+        my $current;
+        if (defined $qid) {
+            $current = Bugzilla::Extension::ChangeLog::Query->check({id=>$qid});
         }
-
-        my $limit = $cgi->param('limit');
-        if (not $limit) {
-            $limit = 10;
-        }
-        if ($limit =~ /^(\d+)$/) {
-            $limit = $1;                # untainted
-        }
-
-        my $sth  = 0;
-        my @cols = [];
-
-        my $retval = get_queries(Bugzilla->params->{"changelog_queries"}, $from_date);
-        my $queries = $retval->{'queries'};
-
-        if (exists $queries->{$field_name}) {
-            $sth = $dbh->prepare($queries->{$field_name});
-        }
-
-        if ($sth) {
-            # Execute the query
-            $sth->execute;
-
-            my $retval = { 'rows' => $sth->fetchall_arrayref, 'name' => $field_name };
-
-            my $column_query = $queries->{$field_name} . " limit 0";
-            if ($column_query =~ /(.*)/) {
-                $column_query = $1;
+        if ($action) {
+            my $values = {
+                name => scalar $cgi->param('name'),
+                statement => scalar $cgi->param('statement'),
+            };
+            if ($action eq 'create') {
+                $current = Bugzilla::Extension::ChangeLog::Query->create($values);
+                $vars->{message} = 'changelog_query_created';
+            } elsif ($action eq 'save') {
+                ThrowCodeError('param_required', {param => 'qid', function=>'save'})
+                    unless defined $current;
+                $current->set_all($values);
+                $current->update();
+                $vars->{message} = 'changelog_query_saved';
+            } elsif ($action eq 'remove') {
+                ThrowCodeError('param_required', {param => 'cid', function=>'remove'})
+                    unless defined $current;
+                $current->remove_from_db();
+                $vars->{message} = 'changelog_query_removed';
+                $vars->{name} = $current->name;
+                $current = undef;
+            } else {
+                ThrowCodeError('param_invalid',
+                    {param => $action, function=>'action'});
             }
-            $dbh->prepare($column_query);
-            $sth->execute;
-
-            $retval->{'cols'} = $sth->{NAME};
-
-            $vars->{'data'} = to_json($retval);
         }
-        else {
-            $vars->{'data'} = to_json(
-                                      {
-                                        'rows' => to_json([]),
-                                        'name' => $field_name,
-                                        'cols' => @cols
-                                      }
-                                     );
-        }
+        $vars->{current} = $current;
+        $vars->{queries} = Bugzilla::Extension::ChangeLog::Query->match();
     }
 }
 
-sub _has_access() {
+sub _has_access {
     my $throwerror = shift;
-    my $access = 0;
-
     my $names = Bugzilla->params->{"changelog_access_groups"};
 
     foreach my $name (@$names) {
-        if (Bugzilla->user->in_group($name)) {
-            $access = 1;
-            last;
-        }
+        return 1 if Bugzilla->user->in_group($name);
     }
 
-    if (!$access && $throwerror) {
-        ThrowUserError('auth_failure', { group => "wanted", action => "show", object => "team" });
+    if ($throwerror) {
+        ThrowUserError('auth_failure', {
+            action => 'access', reason => 'not_visible'
+        });
     }
-    return $access;
+    return 1;
 }
 
 __PACKAGE__->NAME;
