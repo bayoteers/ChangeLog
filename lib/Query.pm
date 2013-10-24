@@ -51,6 +51,7 @@ package Bugzilla::Extension::ChangeLog::Query;
 use Bugzilla::Error;
 use Bugzilla::Util qw(detaint_natural trick_taint trim);
 
+use DateTime;
 use Scalar::Util qw(blessed);
 
 use base qw(Bugzilla::Object);
@@ -119,7 +120,7 @@ sub _check_sql {
     };
     ThrowUserError('invalid_parameter', {
         name => 'statement',
-        err => $dbh->errstr,
+        err => $dbh->errstr || $@,
     }) if ($@ || $dbh->err);
 
     ThrowUserError('invalid_parameter', {
@@ -133,8 +134,8 @@ sub _check_sql {
 sub _prepare_sql {
     my ($query, $params) = @_;
     my $from_date = $params->{from_date}
-        || Bugzilla->dbh->sql_date_math({
-            date => 'NOW()', operator =>'-', interval => 1, units => 'DAY' });
+        || DateTime->now(time_zone => Bugzilla->user->timezone)
+                   ->subtract(days => 1)->ymd;
     $query =~ s/(['"]*)<from-date>(['"]*)/'$from_date'/;
     trick_taint($query);
     return $query;
