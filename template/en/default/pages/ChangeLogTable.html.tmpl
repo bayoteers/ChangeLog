@@ -8,12 +8,17 @@
   #%]
 
 [% PROCESS 'global/field-descs.none.tmpl' %]
-[% bug_ids = [] %]
 
+
+[% IF debug %]
+<pre>[% query FILTER html %]</pre>
+[% END %]
+
+[% bug_ids = [] %]
 <table id="query_[% query.id %]" class="changelog-table tablesorter">
 	<thead>
 		<tr>
-			[% FOREACH col IN headers %]
+			[% FOREACH col IN columns %]
 			<th id="[% query.id %]_[% col FILTER html %]">
 				[% IF field_descs.$col.defined %]
 					[% field_descs.$col %]
@@ -25,10 +30,10 @@
 		</tr>
 	</thead>
 	<tbody>
-	[% FOREACH row IN table %]
+	[% FOREACH row IN data %]
 		<tr>
 			[% FOREACH col IN row %]
-			[% SET field = headers.${loop.index} %]
+			[% SET field = columns.${loop.index} %]
 			<td>
 				[% IF field == 'bug_id' %]
 				[% bug_ids.push(col) %]
@@ -46,7 +51,7 @@
 	[% END %]
 	</tbody>
 </table>
-[% IF table.size == 0 %]
+[% IF data.size == 0 %]
 <p>Nothing to show...</p>
 [% ELSE %]
 <ul class="links">

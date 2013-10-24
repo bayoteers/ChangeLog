@@ -49,7 +49,7 @@ use warnings;
 package Bugzilla::Extension::ChangeLog::Query;
 
 use Bugzilla::Error;
-use Bugzilla::Util qw(detaint_natural trick_taint trim);
+use Bugzilla::Util qw(datetime_from detaint_natural trick_taint trim);
 
 use DateTime;
 use Scalar::Util qw(blessed);
@@ -75,6 +75,15 @@ use constant VALIDATORS => {
     statement => \&_check_sql,
 };
 
+
+# Unit identifiers for relative dates
+use constant DT_UNITS => {
+    Y => 'YEAR',
+    M => 'MONTH',
+    W => 'WEEK',
+    D => 'DAY',
+    H => 'HOUR',
+};
 
 # Accessors
 sub name            { return $_[0]->{name} }
@@ -111,7 +120,7 @@ sub _check_sql {
             err => "Only 'SELECT' allowed.  Found '$1' in query: $value"
         });
     }
-    my $query = _prepare_sql($value, {});
+    my $query = _prepare_sql($value, {from_date=>'NOW', to_date=>'NOW'});
     my $dbh = Bugzilla->dbh;
     my $sth;
     eval {
@@ -131,12 +140,29 @@ sub _check_sql {
     return $value;
 }
 
+sub _get_sql_date {
+    my ($datestr, $default) = @_;
+    $datestr = uc($datestr || $default || 'NOW');
+    my $dt = datetime_from($datestr);
+    if (defined $dt) {
+        return $dt->strftime("TIMESTAMP('%Y-%m-%d %H:%M:%S')");
+    } else {
+        if ($datestr =~ /^([\d]+)([YMWDH]+)$/) {
+            my $unit = DT_UNITS->{$2};
+            return Bugzilla->dbh->sql_date_math('NOW()', '-', $1, $unit);
+        } elsif ($datestr eq 'NOW') {
+            return 'NOW()';
+        }
+    }
+    return "''";
+}
+
 sub _prepare_sql {
     my ($query, $params) = @_;
-    my $from_date = $params->{from_date}
-        || DateTime->now(time_zone => Bugzilla->user->timezone)
-                   ->subtract(days => 1)->ymd;
-    $query =~ s/(['"]*)<from-date>(['"]*)/'$from_date'/;
+    my $from_date = _get_sql_date($params->{from_date}, '1D');
+    my $to_date = _get_sql_date($params->{to_date}, 'NOW');
+    $query =~ s/(['"]*)<from-date>(['"]*)/$from_date/;
+    $query =~ s/(['"]*)<to-date>(['"]*)/$to_date/;
     trick_taint($query);
     return $query;
 }
@@ -152,16 +178,20 @@ Executes the query and returns the rows
 sub execute {
     my ($self, $params) = @_;
     my $query = _prepare_sql($self->statement, $params);
+    my $result = {query => $query};
 
     Bugzilla->switch_to_shadow_db();
     my $sth = Bugzilla->dbh->prepare($query);
-    $sth->execute();
-    my $data = {
-        columns => $sth->{NAME} || [],
-        data => $sth->fetchall_arrayref,
-    };
+    eval { $sth->execute() };
+    if ($@) {
+        $result->{columns} = ['Error executing query'];
+        $result->{data} = [];
+    } else {
+        $result->{columns} = $sth->{NAME} || [];
+        $result->{data} = $sth->fetchall_arrayref;
+    }
     Bugzilla->switch_to_main_db();
-    return $data;
+    return $result;
 }
 
 1;

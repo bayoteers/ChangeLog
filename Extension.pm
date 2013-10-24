@@ -124,11 +124,13 @@ sub page_before_template {
     return unless ($page =~ /^ChangeLog/);
     _has_access(1);
     my $cgi = Bugzilla->cgi;
-    my $from_date  = $cgi->param('from_date');
-    $from_date = datetime_from($from_date) if defined $from_date;
-    $from_date = defined $from_date ? $from_date->ymd
-            : DateTime->now->subtract( days => 1 )->ymd;
-    $vars->{from_date} = $from_date;
+    my $from_date = $cgi->param('from_date');
+    $vars->{from_date} = $from_date || '1d';
+
+    my $to_date = $cgi->param('to_date');
+    $vars->{to_date} = $to_date || 'now';
+
+    $vars->{debug} = Bugzilla->user->in_group('admin') && $cgi->param('debug');
 
     my $qid = $cgi->param('qid');
 
@@ -141,16 +143,18 @@ sub page_before_template {
         my $query = Bugzilla::Extension::ChangeLog::Query->check({id => $qid});
         $vars->{query} = $query;
 
-        my $result = $query->execute({from_date => $from_date});
-        $vars->{headers} = $result->{columns};
-        $vars->{table} = $result->{data};
+        my $result = $query->execute({
+            from_date => $from_date,
+            to_date => $to_date
+        });
+
+        @$vars{keys %$result} = values %$result;
 
         if ($page eq 'ChangeLogTable.csv') {
             $vars->{human} = $cgi->param('human');
-            my $filename = "changelog-".$query->name;
-            $filename .= "-$from_date" if defined $from_date;
-            $filename .= ".csv";
+            my $filename = "changelog-".$query->name.".csv";
             $filename = lc($filename);
+            $filename =~ s/\s/_/;
             print $cgi->header(
                 -content_type => "text/csv",
                 -content_disposition => "attachment; filename=$filename"

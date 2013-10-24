@@ -41,9 +41,22 @@ function clSetURLParam (url, name, newValue) {
 /**
  * Handler for the date selector changes
  */
-function clOnDatePickerSelect(date, picker)
+function clOnDatePickerChange()
 {
-    var name = picker.input.attr('name');
+    var input = $(this);
+    var name = input.attr('name');
+    var date = input.val().trim();
+    if (!date.match(/^now$/i) &&
+        !date.match(/^(\d+)([ymwdh])$/i) &&
+        !date.match(/^\d\d\d\d-\d\d?-\d\d?$/))
+    {
+        input.css('background-color', 'pink');
+        $('#dateerror').show();
+        return;
+    }
+    $('#dateerror').hide();
+    input.css('background-color', '');
+
     var $tabs = $("#tabs");
 
     // Update tab urls
@@ -89,12 +102,15 @@ function clOnTabLoad(ev, ui)
  */
 function clInit()
 {
-    $("#datepicker").datepicker({
+    $("input.datepicker").datepicker({
+        constrainInput: false,
+        firstDay: 1,
         maxDate: "-0D",
         dateFormat: 'yy-mm-dd',
-        defaultDate: -2,
-        onSelect: clOnDatePickerSelect
-    });
+        showOn: "button",
+        buttonImage: "skins/standard/global/calendar.png",
+        buttonImageOnly: true
+    }).change(clOnDatePickerChange);
 
     var activeTab = $.cookie("ChangeLogActiveTab") || 0;
     $("#tabs").tabs({
