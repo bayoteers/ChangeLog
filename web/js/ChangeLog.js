@@ -15,7 +15,6 @@
  * @return {String}          New URL
  */
 function clSetURLParam (url, name, newValue) {
-    console.log("url", url)
     // Split the hash and parameters out of the URL
     var parts = url.split(/#/);
     var newUrl = parts[0];
@@ -36,7 +35,6 @@ function clSetURLParam (url, name, newValue) {
     // Construct new url
     newUrl += '?' + params;
     if (hash) newUrl += '#' + hash;
-    console.log("newUrl", newUrl);
     return newUrl;
 }
 
@@ -55,7 +53,6 @@ function clOnDatePickerSelect(date, picker)
         url = clSetURLParam(url, name, date);
         $a.data('href.tabs', url);
         $a.data('load.tabs', url);
-        console.log(url);
     });
 
     // Reload current tab
@@ -75,7 +72,6 @@ function clOnDatePickerSelect(date, picker)
  */
 function clOnTabLoad(ev, ui)
 {
-    console.log(ui);
     if (history.replaceState) {
         var url = document.location.href.replace(/#.*|$/, '#' + ui.panel.id);
         history.replaceState({}, document.title, url);
@@ -86,4 +82,27 @@ function clOnTabLoad(ev, ui)
     }
     $.cookie("ChangeLogActiveTab", ui.index, { expires: 9999 });
     $("table.changelog-table", ui.panel).tablesorter();
+}
+
+/**
+ * Initializition when page has loaded
+ */
+function clInit()
+{
+    $("#datepicker").datepicker({
+        maxDate: "-0D",
+        dateFormat: 'yy-mm-dd',
+        defaultDate: -2,
+        onSelect: clOnDatePickerSelect
+    });
+
+    var activeTab = $.cookie("ChangeLogActiveTab") || 0;
+    $("#tabs").tabs({
+        load: clOnTabLoad,
+        selected: Number(activeTab),
+        ajaxOptions: {
+            beforeSend: function() {$("#loadin-element").show()},
+            complete: function() {$("#loadin-element").hide()},
+        }
+    });
 }

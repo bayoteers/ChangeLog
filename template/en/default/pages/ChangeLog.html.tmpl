@@ -58,24 +58,7 @@
 </div>
 
 <script type="text/javascript">
-  $(document).ready(function() {
-    $("#datepicker").datepicker({
-      maxDate: "-0D",
-      dateFormat: 'yy-mm-dd',
-      defaultDate: -2,
-      onSelect: clOnDatePickerSelect
-    });
-    var activeTab = $.cookie("ChangeLogActiveTab") || 0;
-    console.log("activeTab", activeTab);
-    $("#tabs").tabs({
-      load: clOnTabLoad,
-      selected: Number(activeTab),
-      ajaxOptions: {
-        beforeSend: function() {$("#loadin-element").show()},
-        complete: function() {$("#loadin-element").hide()},
-      }
-    });
-  });
+  $(document).ready(clInit)
 </script>
 
 [% PROCESS global/footer.html.tmpl %]
