@@ -11,10 +11,12 @@
 
 [% style = BLOCK %]
 #queries { border-spacing: 0px; }
-#queries th { text-align: left; }
+#queries th { text-align: left; padding: 0.5em; }
+#queries td { padding-left: 1em; }
 #queries td.current { font-weight: bold; }
 #queries tr.odd { background-color: lightgray; }
 #edit_query td { vertical-align: top; }
+#edit_query th { text-align: right; width: 10ex;}
 [% END %]
 
 [% PROCESS global/header.html.tmpl
@@ -25,6 +27,8 @@
   <thead>
     <tr>
       <th>Name</th>
+      <th>Active</th>
+      <th>Sort order</th>
     </tr>
   </thead>
   <tbody>
@@ -32,6 +36,12 @@
     <tr class="[% 'odd' IF loop.odd %]">
       <td class="[% 'current' IF q.id == current.id %]">
         [% q.name FILTER html %]
+      </td>
+      <td>
+        [% q.is_active ? 'Yes' : 'No' %]
+      </td>
+      <td>
+        [% q.sort_order FILTER html %]
       </td>
       <td>
         <form method="POST" action="page.cgi?id=ChangeLogQuery.html">
@@ -56,8 +66,24 @@
   [% END %]
   <table id="edit_query">
     <tr>
-      <td><label for="name">Name:</label><input type="text" name="name"
-          value="[% current.name FILTER html %]"/></td>
+      <th><label for="name">Name:</label></th>
+      <td>
+        <input type="text" name="name" value="[% current.name FILTER html %]"/>
+      </td>
+    </tr>
+    <tr>
+      <th><label for="is_active">Active:</label></th>
+      <td>
+        <input type="checkbox" name="is_active"
+          [% IF current.is_active %]checked="checked"[% END %]/>
+      </td>
+    </tr>
+    <tr>
+      <th><label for="sort_order">Sort order:</label></th>
+      <td>
+        <input type="text" name="sort_order"
+          value="[% current.sort_order FILTER html %]"/>
+      </td>
     </tr>
     <tr>
       <td colspan="2">

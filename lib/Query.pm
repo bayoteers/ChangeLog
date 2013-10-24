@@ -63,26 +63,38 @@ use constant DB_COLUMNS => qw(
     id
     name
     statement
+    is_active
+    sort_order
 );
+
+use constant LIST_ORDER => 'sort_order, name';
 
 use constant UPDATE_COLUMNS => qw(
     name
     statement
+    is_active
+    sort_order
 );
 
 use constant VALIDATORS => {
     name => \&_check_name,
     statement => \&_check_sql,
+    is_active => \&Bugzilla::Object::check_boolean,
+    sort_order => \&_check_sort_order,
 };
 
 
 # Accessors
 sub name            { return $_[0]->{name} }
 sub statement       { return $_[0]->{statement} }
+sub is_active       { return $_[0]->{is_active} }
+sub sort_order      { return $_[0]->{sort_order} }
 
 # Mutators
 sub set_name        { $_[0]->set('name', $_[1]); }
 sub set_statement   { $_[0]->set('statement', $_[1]); }
+sub set_is_active   { $_[0]->set('is_active', $_[1]); }
+sub set_sort_order  { $_[0]->set('sort_order', $_[1]); }
 
 # Validators
 sub _check_name {
@@ -100,6 +112,15 @@ sub _check_name {
                 {name => $name});
     }
     return $name;
+}
+
+sub _check_sort_order {
+    my ($invocant, $value) = @_;
+    ThrowUserError('invalid_parameter', {
+            name => 'sort order',
+            err => 'Must be numeric value',
+        }) unless detaint_natural($value);
+    return $value;
 }
 
 sub _check_sql {

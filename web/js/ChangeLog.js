@@ -80,7 +80,7 @@ function clOnTabLoad(ev, ui)
         // nothing when history manipulation is not available.
         window.location.hash = ui.panel.id;
     }
-    $.cookie("ChangeLogActiveTab", ui.index, { expires: 9999 });
+    $.cookie("clLastQuery", $(ui.tab).data('qid'), { expires: 9999 });
     $("table.changelog-table", ui.panel).tablesorter();
 }
 
@@ -96,10 +96,10 @@ function clInit()
         onSelect: clOnDatePickerSelect
     });
 
-    var activeTab = $.cookie("ChangeLogActiveTab") || 0;
+    var qid = $.cookie("clLastQuery") || 0;
     $("#tabs").tabs({
         load: clOnTabLoad,
-        selected: Number(activeTab),
+        selected: clQueryIndex[qid] || 0,
         ajaxOptions: {
             beforeSend: function() {$("#loadin-element").show()},
             complete: function() {$("#loadin-element").hide()},

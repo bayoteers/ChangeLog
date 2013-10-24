@@ -68,6 +68,8 @@ sub db_schema_abstract_schema {
             id => {TYPE => 'MEDIUMSERIAL', NOTNULL => 1, PRIMARYKEY => 1},
             name => {TYPE => 'TINYTEXT', NOTNULL => 1},
             statement => {TYPE => 'MEDIUMTEXT'},
+            is_active => {TYPE => 'BOOLEAN', NOTNULL => 1, DEFAULT => 0},
+            sort_order => {TYPE => 'INT2', NOTNULL => 1, DEFAULT => 0},
         ],
         INDEXES => [],
     };
@@ -133,7 +135,8 @@ sub page_before_template {
     my $qid = $cgi->param('qid');
 
     if ($page eq 'ChangeLog.html') {
-        $vars->{'queries'} = Bugzilla::Extension::ChangeLog::Query->match();
+        $vars->{'queries'} = Bugzilla::Extension::ChangeLog::Query->match(
+            {is_active => 1});
     }
 
     if ($page eq 'ChangeLogTable.html' || $page eq 'ChangeLogTable.csv') {
@@ -172,6 +175,8 @@ sub page_before_template {
             my $values = {
                 name => scalar $cgi->param('name'),
                 statement => scalar $cgi->param('statement'),
+                is_active => scalar $cgi->param('is_active') ? 1 : 0,
+                sort_order => scalar $cgi->param('sort_order'),
             };
             if ($action eq 'create') {
                 $current = Bugzilla::Extension::ChangeLog::Query->create($values);
