@@ -11,56 +11,56 @@
 [% bug_ids = [] %]
 
 <table id="query_[% query.id %]" class="changelog-table tablesorter">
-	<thead>
-		<tr>
-			[% FOREACH col IN headers %]
-			<th id="[% query.id %]_[% col FILTER html %]">
-				[% IF field_descs.$col.defined %]
-					[% field_descs.$col %]
-				[% ELSE %]
-					[% col FILTER ucfirst FILTER html %]
-				[% END %]
-				</th>
-			[% END %]
-		</tr>
-	</thead>
-	<tbody>
-	[% FOREACH row IN table %]
-		<tr>
-			[% FOREACH col IN row %]
-			[% SET field = headers.${loop.index} %]
-			<td>
-				[% IF field == 'bug_id' %]
-				[% bug_ids.push(col) %]
-				<a href="show_bug.cgi?id=[% col FILTER html %]" target="_blank">
-				[% END %]
-				[% IF field.match('date|time|when') %]
-        	[% col FILTER time("%Y-%m-%d %H:%M:%S") %]
+  <thead>
+    <tr>
+      [% FOREACH col IN headers %]
+      <th id="[% query.id %]_[% col FILTER html %]">
+        [% IF field_descs.$col.defined %]
+          [% field_descs.$col FILTER html %]
         [% ELSE %]
-        	[% col FILTER html %]
-      	[% END %]
-				[% IF field == 'bug_id' %]</a>[% END %]
-			</td>
-			[% END %]
-		</tr>
-	[% END %]
-	</tbody>
+          [% col FILTER ucfirst FILTER html %]
+        [% END %]
+        </th>
+      [% END %]
+    </tr>
+  </thead>
+  <tbody>
+  [% FOREACH row IN table %]
+    <tr>
+      [% FOREACH col IN row %]
+      [% SET field = headers.${loop.index} %]
+      <td>
+        [% IF field == 'bug_id' %]
+        [% bug_ids.push(col) %]
+        <a href="show_bug.cgi?id=[% col FILTER html %]" target="_blank">
+        [% END %]
+        [% IF field.match('date|time|when') %]
+          [% col FILTER time("%Y-%m-%d %H:%M:%S") %]
+        [% ELSE %]
+          [% col FILTER html %]
+        [% END %]
+        [% IF field == 'bug_id' %]</a>[% END %]
+      </td>
+      [% END %]
+    </tr>
+  [% END %]
+  </tbody>
 </table>
 [% IF table.size == 0 %]
 <p>Nothing to show...</p>
 [% ELSE %]
 <ul class="links">
-	<li>
-		<a href="page.cgi?id=ChangeLogTable.csv&amp;qid=[% query.id %]&amp;human=1">
-			Download as CSV</a>
-	</li>
-	[% IF bug_ids.size %]
-	<li>
-		<span class="separator">| </span>
-		<a href="buglist.cgi?bug_id=[% bug_ids.unique.join(',') FILTER uri %]">
-			Open as [% terms.bug %] list</a>
-	</li>
-	[% END %]
+  <li>
+    <a href="page.cgi?id=ChangeLogTable.csv&amp;qid=[% query.id %]&amp;human=1">
+      Download as CSV</a>
+  </li>
+  [% IF bug_ids.size %]
+  <li>
+    <span class="separator">| </span>
+    <a href="buglist.cgi?bug_id=[% bug_ids.unique.join(',') FILTER uri %]">
+      Open as [% terms.bug %] list</a>
+  </li>
+  [% END %]
 </ul>
 [% END %]
 </p>
