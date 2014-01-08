@@ -102,7 +102,7 @@ function clInit()
         selected: clQueryIndex[qid] || 0,
         ajaxOptions: {
             beforeSend: function() {$("#loadin-element").show()},
-            complete: function() {$("#loadin-element").hide()},
+            complete: function() {$("#loadin-element").hide()}
         }
     });
 }
