@@ -97,9 +97,11 @@ function clInit()
     });
 
     var qid = $.cookie("clLastQuery") || 0;
+    var selected = (!window.location.hash && qid) ? (clQueryIndex[qid] || 0) : undefined;
+
     $("#tabs").tabs({
         load: clOnTabLoad,
-        selected: clQueryIndex[qid] || 0,
+        selected: selected,
         ajaxOptions: {
             beforeSend: function() {$("#loadin-element").show()},
             complete: function() {$("#loadin-element").hide()}
