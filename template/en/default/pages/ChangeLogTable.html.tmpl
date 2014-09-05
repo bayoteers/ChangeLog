@@ -51,7 +51,8 @@
 [% ELSE %]
 <ul class="links">
   <li>
-    <a href="page.cgi?id=ChangeLogTable.csv&amp;qid=[% query.id %]&amp;human=1">
+    <a href="page.cgi?id=ChangeLogTable.csv&amp;qid=[% query.id %]&amp;from_date=
+            [% from_date FILTER uri %]&amp;human=1">
       Download as CSV</a>
   </li>
   [% IF bug_ids.size %]
