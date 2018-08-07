@@ -49,10 +49,9 @@ function clOnDatePickerSelect(date, picker)
     // Update tab urls
     $tabs.data('tabs').anchors.each(function() {
         var $a = $(this)
-        var url = $a.data('href.tabs');
+        var url = $a.attr('href');
         url = clSetURLParam(url, name, date);
-        $a.data('href.tabs', url);
-        $a.data('load.tabs', url);
+        $a.attr('href', url);
     });
 
     // Reload current tab
