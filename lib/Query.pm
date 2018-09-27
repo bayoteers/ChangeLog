@@ -158,6 +158,9 @@ sub _prepare_sql {
     $from_date ||= DateTime->now();
     my $date_string = $from_date->ymd . ' ' . $from_date->hms;
     $query =~ s/(['"]*)<from-date>(['"]*)/'$date_string'/;
+
+    my $user_id = Bugzilla->user->id;
+    $query =~ s/(['"]*)<user-id>(['"]*)/'$user_id'/;
     trick_taint($query);
     return $query;
 }
