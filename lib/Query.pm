@@ -154,10 +154,10 @@ sub _check_sql {
 
 sub _prepare_sql {
     my ($query, $params) = @_;
-    my $from_date = $params->{from_date}
-        || DateTime->now(time_zone => Bugzilla->user->timezone)
-                   ->subtract(days => 1)->ymd;
-    $query =~ s/(['"]*)<from-date>(['"]*)/'$from_date'/;
+    my $from_date = $params->{from_date};
+    $from_date ||= DateTime->now();
+    my $date_string = $from_date->ymd . ' ' . $from_date->hms;
+    $query =~ s/(['"]*)<from-date>(['"]*)/'$date_string'/;
     trick_taint($query);
     return $query;
 }

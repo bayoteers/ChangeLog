@@ -41,10 +41,12 @@ function clSetURLParam (url, name, newValue) {
 /**
  * Handler for the date selector changes
  */
-function clOnDatePickerSelect(date, picker)
+function clChangeDate(date)
 {
-    var name = picker.input.attr('name');
+    var $input = $("#datepicker");
     var $tabs = $("#tabs");
+    var name = $input.attr("name");
+    $input.css('color', '');
 
     // Update tab urls
     $tabs.data('tabs').anchors.each(function() {
@@ -88,11 +90,28 @@ function clOnTabLoad(ev, ui)
  */
 function clInit()
 {
+    var relative_re = /^-\d+[hdwm]$/i;
+    var ymd_re = /^\d{4}-\d{2}-\d{2}$/i;
     $("#datepicker").datepicker({
         maxDate: "-0D",
         dateFormat: 'yy-mm-dd',
+        constrainInput: false,
+        showOn: "button",
+        buttonText: "&#128197;",
         defaultDate: -2,
-        onSelect: clOnDatePickerSelect
+        onSelect: function(date, picker) {
+            clChangeDate(date);
+        }
+    }).keyup(function(e){
+        if(e.keyCode == 13) {
+            var $picker = $("#datepicker");
+            var date = $picker.val();
+            if (relative_re.test(date) || ymd_re.test(date)) {
+                clChangeDate(date);
+            } else {
+                $picker.css('color', 'red');
+            }
+        }
     });
 
     var qid = $.cookie("clLastQuery") || 0;

@@ -38,8 +38,9 @@
 <div>
   <p>
     View changes since:
-    <input id="datepicker" type="text" size="08" name="from_date"
-      value="[% from_date FILTER html %]">
+    <input id="datepicker" type="text" size="10" name="from_date"
+      value="[% from_date FILTER html %]"
+      title="YYYY-MM-DD, or relative form like '-7d', which accepts h, d, w or m">
     <img id="loadin-element" style="display:none;"
       src="extensions/ChangeLog/web/ajax-loader.gif" />
   </p>

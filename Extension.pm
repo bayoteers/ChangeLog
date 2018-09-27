@@ -127,10 +127,28 @@ sub page_before_template {
     _has_access(1);
     my $cgi = Bugzilla->cgi;
     my $from_date  = $cgi->param('from_date');
-    $from_date = datetime_from($from_date) if defined $from_date;
-    $from_date = defined $from_date ? $from_date->ymd
-            : DateTime->now->subtract( days => 1 )->ymd;
+    $from_date ||= '';
     $vars->{from_date} = $from_date;
+    my $now = DateTime->now();
+    if ($from_date =~ /^-([\d]+)([hdwm])/i) {
+        my $value = $1;
+        my $unit = lc($2);
+        if ($unit eq 'h') {
+            $from_date = $now->subtract(hours => $value);
+        } elsif ($unit eq 'd') {
+            $from_date = $now->subtract(days => $value);
+        } elsif ($unit eq 'w') {
+            $from_date = $now->subtract(weeks => $value);
+        } elsif ($unit eq 'm') {
+            $from_date = $now->subtract(months => $value);
+        }
+    } elsif ( $from_date =~ /^\d{4}-\d{2}-\d{2}$/ ) {
+        $from_date = datetime_from($from_date, Bugzilla->user->timezone)
+    } else {
+        $from_date = $now->subtract(days => 1);
+        $vars->{from_date} = $from_date->ymd;
+    }
+    $from_date->set_time_zone(Bugzilla->local_timezone);
 
     my $qid = $cgi->param('qid');
 
@@ -151,7 +169,7 @@ sub page_before_template {
         if ($page eq 'ChangeLogTable.csv') {
             $vars->{human} = $cgi->param('human');
             my $filename = "changelog-".$query->name;
-            $filename .= "-$from_date" if defined $from_date;
+            $filename .= "-" . $from_date->ymd;
             $filename .= ".csv";
             $filename = lc($filename);
             print $cgi->header(
